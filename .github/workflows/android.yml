@@ -2,7 +2,7 @@ name: APK derle
 
 on:
   push:
-    paths-ignore: ["web/**", ".github/workflows/pages.yml", "README.md"]
+    paths-ignore: ["web/**", "scripts/**", ".github/workflows/pages.yml", "README.md"]
   workflow_dispatch:
 
 permissions:

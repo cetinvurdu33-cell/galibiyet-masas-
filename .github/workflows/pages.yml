@@ -3,7 +3,10 @@ name: Web uygulamasını yayınla
 on:
   push:
     branches: [main]
-    paths: ["web/**", ".github/workflows/pages.yml"]
+    paths: ["web/**", "scripts/**", ".github/workflows/pages.yml"]
+  # Verileri 3 saatte bir yenile (saatler UTC; GitHub yoğunken birkaç dakika gecikebilir)
+  schedule:
+    - cron: "17 */3 * * *"
   workflow_dispatch:
 
 permissions:
@@ -23,6 +26,23 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # Anahtar eklenmemişse bu adım atlanır ve sayfa içindeki verilerle yayınlanır.
+      # Veri alınamazsa iş durur; önceki yayın (son güncel veriler) yerinde kalır.
+      - name: Güncel verileri çek
+        env:
+          FOOTBALL_DATA_TOKEN: ${{ secrets.FOOTBALL_DATA_TOKEN }}
+        run: |
+          if [ -z "$FOOTBALL_DATA_TOKEN" ]; then
+            echo "::warning::FOOTBALL_DATA_TOKEN eklenmemiş, veriler güncellenmedi."
+          else
+            node scripts/update-data.mjs
+          fi
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

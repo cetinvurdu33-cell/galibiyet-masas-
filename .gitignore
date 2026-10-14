@@ -40,3 +40,6 @@ build/
 local.properties
 .idea/
 *.iml
+
+# Zamanlanmış işin ürettiği veri (depoya eklenmez)
+web/data.json

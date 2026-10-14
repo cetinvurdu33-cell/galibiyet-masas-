@@ -120,7 +120,7 @@ mark{background:var(--accent-soft);color:inherit;border-radius:2px}
 
 <div class="wrap">
   <header>
-    <div class="eyebrow">2026-27 sezonu · 14 Ekim 2026 itibarıyla</div>
+    <div class="eyebrow">2026-27 sezonu · <span id="asOf">14 Ekim 2026</span> itibarıyla</div>
     <h1>Galibiyet Masası</h1>
     <p class="sub">Bu sezon takımlar maçlarının ne kadarını kazanıyor? Bir lig seçin, sıralamayı değiştirin, iki takımı karşılaştırın.</p>
   </header>
@@ -187,7 +187,7 @@ mark{background:var(--accent-soft);color:inherit;border-radius:2px}
     </details>
   </section>
 
-  <footer>Kaynak: Avrupa ligleri, Şampiyonlar Ligi ve MLS için Sportradar verisi; Süper Lig için sabah.com.tr puan durumu ve milligazete.com.tr 8. hafta fikstürü; Süper Lig yarı dağılımı için sabah.com.tr'nin 2025-26 sezon değerlendirmesi; Premier League ve La Liga yarı golleri için soccerstats.com; 2023-24, 2024-25 ve 2025-26 sezon sonu tabloları için Wikipedia. "Harmanlanmış" oran, bu sezonu son 3 sezonla birleştirir. Şampiyonlar Ligi geçmişi yalnızca grup ve lig aşaması maçlarını içerir, eleme turları dahil değildir. MLS için geçmiş sezon verisi eklenmedi. Veriler 14 Ekim 2026'da alındı ve sayfa açıldığında güncellenmez. Şampiyonlar Ligi'nde takımlar farklı sayıda maç oynamış olabilir.</footer>
+  <footer>Kaynak: Avrupa ligleri, Şampiyonlar Ligi ve MLS için Sportradar verisi; Süper Lig için sabah.com.tr puan durumu ve milligazete.com.tr 8. hafta fikstürü; Süper Lig yarı dağılımı için sabah.com.tr'nin 2025-26 sezon değerlendirmesi; Premier League ve La Liga yarı golleri için soccerstats.com; 2023-24, 2024-25 ve 2025-26 sezon sonu tabloları için Wikipedia. "Harmanlanmış" oran, bu sezonu son 3 sezonla birleştirir. Şampiyonlar Ligi geçmişi yalnızca grup ve lig aşaması maçlarını içerir, eleme turları dahil değildir. MLS için geçmiş sezon verisi eklenmedi. <span id="dataNote">Veriler 14 Ekim 2026'da alındı.</span> Şampiyonlar Ligi'nde takımlar farklı sayıda maç oynamış olabilir.</footer>
 </div>
 
 <script>
@@ -379,7 +379,7 @@ const parse = s => s.trim().split("\n").map(r=>{
   const [n,w,d,l,gf,ga]=r.split("|"); const W=+w,D=+d,L=+l,P=W+D+L, pts=W*3+D;
   return {n,W,D,L,P,pts,gf:gf===undefined?null:+gf,ga:ga===undefined?null:+ga,win:P?W/P:0,ppg:P?pts/P:0,unb:P?(W+D)/P:0,draw:P?D/P:0,loss:P?L/P:0};
 });
-const data = Object.fromEntries(Object.entries(LEAGUES).map(([k,v])=>[k,parse(v)]));
+let data;
 
 // Geçmiş 3 sezon (sezon sonu tabloları, Wikipedia): "Takım|23-24|24-25|25-26", her sezon "G,B,M,AG,YG" ya da "-" (o ligde değildi)
 const HISTORY = {
@@ -560,7 +560,9 @@ Málaga|2|8|2|5`
 const SEASON_W=[1,2,3];   // eski → yeni sezon ağırlıkları
 const K=10;               // geçmişin "kaç maçlık" etkisi olduğu
 
-// Geçmiş özetini hesapla ve takımlara ekle
+// Geçmiş özetini hesapla ve takımlara ekle (güncel veri gelince yeniden çalışır)
+function build(){
+data = Object.fromEntries(Object.entries(LEAGUES).map(([k,v])=>[k,parse(v)]));
 Object.entries(data).forEach(([lg,teams])=>{
   const hist={}; (HISTORY[lg]||"").trim().split("\n").filter(Boolean).forEach(r=>{
     const [n,...ss]=r.split("|"); hist[n]=ss.map(s=>s==="-"?null:s.split(",").map(Number));
@@ -586,6 +588,8 @@ Object.entries(data).forEach(([lg,teams])=>{
     t.att = mix(cgf,H?.gf); t.def = mix(cga,H?.ga);
   });
 });
+}
+build();
 
 const $ = id=>document.getElementById(id);
 const pct = x=>Math.round(x*100)+"%";
@@ -799,13 +803,15 @@ function hl(name,q){
   const n=norm(name), i=n.indexOf(q); if(i<0) return esc(name);
   return esc(name.slice(0,i))+"<mark>"+esc(name.slice(i,i+q.length))+"</mark>"+esc(name.slice(i+q.length));
 }
+// Başlamasının üzerinden 2 saatten fazla geçen maçları gösterme
+const upcoming = iso => iso && new Date(iso).getTime() > Date.now() - 2*3600e3;
 function halves(){
   const q=norm($("fxSearch").value.trim());
   // Arama boşsa seçili lig; doluysa tüm liglerde ara
   let rows=[];
   if(q){
     Object.entries(FIXTURES).forEach(([lg,src])=>src.trim().split("\n").forEach(r=>{
-      const [iso,h,a]=r.split("|"); if(norm(h).includes(q)||norm(a).includes(q)) rows.push({lg,iso,h,a});
+      const [iso,h,a]=r.split("|"); if(upcoming(iso)&&(norm(h).includes(q)||norm(a).includes(q))) rows.push({lg,iso,h,a});
     }));
     rows.sort((x,y)=>new Date(x.iso)-new Date(y.iso));
     $("hTitle").textContent = "Arama sonuçları · hangi yarı daha gollü?";
@@ -816,7 +822,8 @@ function halves(){
     $("hTitle").textContent = league+" · hangi yarı daha gollü?";
     $("fxCount").textContent = "";
     if(!src){ $("fixtures").innerHTML=`<div class="empty">${league} için yaklaşan maç programı bu sayfaya eklenmedi. Tahminler şu an Süper Lig, Premier League, La Liga, Serie A, Bundesliga, Ligue 1 ve Şampiyonlar Ligi maçları için var. Yukarıdan tüm liglerde takım arayabilirsiniz.</div>`; return; }
-    rows=src.trim().split("\n").map(r=>{ const [iso,h,a]=r.split("|"); return {lg:league,iso,h,a}; });
+    rows=src.trim().split("\n").map(r=>{ const [iso,h,a]=r.split("|"); return {lg:league,iso,h,a}; }).filter(r=>upcoming(r.iso));
+    if(!rows.length){ $("fixtures").innerHTML=`<div class="empty">${league} için önümüzdeki günlerde maç görünmüyor. Program güncellendikçe burada çıkacak.</div>`; return; }
   }
   $("fixtures").innerHTML = rows.map(({lg,iso,h,a})=>{
     const tot=expectedGoals(lg,h,a), share=secondShare(lg,h,a);
@@ -840,6 +847,32 @@ function halves(){
 $("fxSearch").addEventListener("input",halves);
 function render(reset){ chips(); summary(); table(); pickers(reset); compare(); halves(); }
 render(true);
+
+// ---- Güncel veri ----
+// GitHub'daki zamanlanmış iş data.json dosyasını düzenli olarak yeniler.
+// Dosya alınamazsa sayfa içindeki veriler kullanılır.
+const dfmt = new Intl.DateTimeFormat("tr-TR",{timeZone:"Europe/Istanbul",day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"});
+function applyData(j){
+  if(!j||!j.leagues) return false;
+  Object.entries(j.leagues).forEach(([lg,v])=>{
+    if(v.table) LEAGUES[lg]=v.table;
+    if(v.halves) CUR_HALVES[lg]=v.halves;
+    if(typeof v.fixtures==="string") FIXTURES[lg]=v.fixtures;
+  });
+  build();
+  if(!data[league]) league="Süper Lig";
+  const a=$("selA").value, b=$("selB").value;
+  render(true);
+  // Kullanıcının seçtiği takımları koru
+  if(a!==b && data[league].some(t=>t.n===a) && data[league].some(t=>t.n===b)){ $("selA").value=a; $("selB").value=b; compare(); }
+  const when=dfmt.format(new Date(j.updated)), auto=Object.keys(j.leagues);
+  $("asOf").textContent=when;
+  const manual=Object.keys(LEAGUES).filter(k=>!auto.includes(k));
+  $("dataNote").textContent=`${auto.join(", ")} verileri ${when} tarihinde otomatik güncellendi (kaynak: football-data.org).`+
+    (manual.length?` ${manual.join(" ve ")} verileri 14 Ekim 2026 tarihlidir.`:"");
+  return true;
+}
+fetch("data.json",{cache:"no-cache"}).then(r=>r.ok?r.json():null).then(applyData).catch(()=>{});
 </script>
 
 <script>if("serviceWorker" in navigator){addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));}</script>
