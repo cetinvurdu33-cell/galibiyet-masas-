@@ -8,9 +8,8 @@ Minimum Android sürümü: 8.0 (API 26).
 
 1. github.com'da yeni bir depo oluşturun.
 2. Bu klasördeki her şeyi depoya yükleyin. `.github` klasörü de dahil olmalı.
-3. Deponun **Actions** sekmesini açın. "APK derle" adlı iş kendiliğinden başlar ve birkaç dakika sürer.
-4. İş bitince sayfanın altındaki **Artifacts** bölümünden `GalibiyetMasasi-apk` dosyasını indirin.
-5. İndirdiğiniz zip'i açın ve içindeki `app-debug.apk` dosyasını telefona kurun. Android "bilinmeyen kaynaklardan yükleme" izni isteyebilir.
+3. "APK derle" işi her yüklemede kendiliğinden başlar ve birkaç dakika sürer. Durumunu **Actions** sekmesinden izleyebilirsiniz.
+4. İş bitince deponun **Releases** bölümünde yeni bir sürüm çıkar. Oradaki `GalibiyetMasasi.apk` dosyasını telefona indirip kurun. Android "bilinmeyen kaynaklardan yükleme" izni isteyebilir.
 
 ## Yol 2: Android Studio ile
 

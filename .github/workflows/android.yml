@@ -4,6 +4,9 @@ on:
   push:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -20,9 +23,20 @@ jobs:
           gradle-version: "8.7"
 
       - name: APK derle
-        run: gradle :app:assembleDebug
+        run: |
+          gradle :app:assembleDebug
+          cp app/build/outputs/apk/debug/app-debug.apk GalibiyetMasasi.apk
 
       - uses: actions/upload-artifact@v4
         with:
           name: GalibiyetMasasi-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: GalibiyetMasasi.apk
+
+      # APK'yı Releases bölümüne koyar; telefondan doğrudan indirilebilir
+      - name: Sürüm yayınla
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v1.0.${{ github.run_number }}" GalibiyetMasasi.apk \
+            --title "Galibiyet Masası 1.0.${{ github.run_number }}" \
+            --notes "Telefonunuza GalibiyetMasasi.apk dosyasını indirip kurun. Veriler 14 Ekim 2026 tarihlidir."
