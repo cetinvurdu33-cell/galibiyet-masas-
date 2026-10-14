@@ -11,7 +11,7 @@
 //   fixtures: "ISO tarih|Ev|Deplasman"
 
 import { readFileSync, writeFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, join } from "node:path";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -386,4 +386,9 @@ async function main() {
   console.log(`web/data.json yazıldı (${Object.keys(leagues).length} lig, ${absences.length} eksik oyuncu kaydı${errors.length ? `, ${errors.length} hata` : ""}).`);
 }
 
-main().catch(e => { console.error(e); process.exit(1); });
+// Başka bir betikten içe aktarılınca (ör. check-seed.mjs) çalışmasın
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch(e => { console.error(e); process.exit(1); });
+}
+
+export { knownNames, buildNameMap, seedAbsences, SEED };
