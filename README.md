@@ -32,6 +32,22 @@ Bir kere yapılacak kurulum:
 3. Ad olarak `FOOTBALL_DATA_TOKEN` yazın, değer olarak e-postadaki anahtarı yapıştırın ve kaydedin.
 4. **Actions** sekmesinde "Web uygulamasını yayınla" işini seçip **Run workflow** düğmesine basın. Birkaç dakika sonra sayfanın üstündeki tarih güncellenir.
 
+### Ev sahibi avantajı, sakat ve cezalı oyuncular
+
+Her güncellemede şunlar da yeniden hesaplanır:
+
+- **Ev sahibi avantajı:** Her ligde bu sezon ev sahiplerinin attığı gollerin payı ölçülür ve maç tahminine katılır.
+- **Gol katkısı:** Oyuncuların bu sezonki gol ve asistleri football-data.org'dan alınır. Eksik bir oyuncunun takıma etkisi bu katkıyla ölçülür.
+- **Sakat ve cezalı oyuncular:** API-Football anahtarı eklendiyse 7 lig ve Şampiyonlar Ligi için her güncellemede yenilenir. Aynı anahtarla Süper Lig maçları ve puan durumu da otomatik güncellenir. Anahtar yoksa ya da bir lig için veri alınamazsa `scripts/absences-seed.json` içindeki 13 Ekim 2026 listesi kullanılır; dönüş tarihi geçen oyuncular bu listeden kendiliğinden düşer.
+
+API-Football kurulumu:
+
+1. dashboard.api-football.com adresinden ücretsiz hesap açın ve panelde görünen API anahtarını kopyalayın.
+2. GitHub'da **Settings → Secrets and variables → Actions → New repository secret** yolunu izleyin.
+3. Ad olarak `API_FOOTBALL_KEY` yazın, değer olarak anahtarı yapıştırın ve kaydedin.
+
+Ücretsiz paket günde 100 istek verir; her güncelleme yaklaşık 8 istek kullanır, yani günde 8 güncelleme sınırın altında kalır.
+
 Notlar:
 - İş saatleri UTC'ye göredir ve GitHub yoğunken birkaç dakika gecikebilir.
 - GitHub, 60 gün boyunca hiç değişiklik yapılmayan depolarda zamanlanmış işleri durdurur. Bu olursa e-posta gelir; Actions sekmesinden işi yeniden etkinleştirin.

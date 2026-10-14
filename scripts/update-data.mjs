@@ -1,6 +1,9 @@
-// Galibiyet Masası: güncel verileri football-data.org'dan çekip web/data.json dosyasını üretir.
-// GitHub Actions'ta zamanlanmış olarak çalışır. Gerekli: FOOTBALL_DATA_TOKEN ortam değişkeni.
-// Yerel deneme için: FD_MOCK_DIR=klasör (içinde PL.json, PD.json ... bulunan) ile ağ kullanmadan çalışır.
+// Galibiyet Masası: güncel verileri çekip web/data.json dosyasını üretir.
+// GitHub Actions'ta zamanlanmış olarak çalışır.
+//   FOOTBALL_DATA_TOKEN (gerekli): 6 ligin maçları, devre golleri, ev/deplasman golleri ve gol katkısı listesi
+//   API_FOOTBALL_KEY (isteğe bağlı): sakat/cezalı oyuncular (7 lig + Şampiyonlar Ligi) ve Süper Lig maçları
+// Anahtar yoksa ya da bir lig için veri alınamazsa eksik oyuncular scripts/absences-seed.json listesinden gelir.
+// Yerel deneme için: FD_MOCK_DIR=klasör (PL.json, PL-scorers.json, AF-injuries-39.json ...) ile ağ kullanmadan çalışır.
 //
 // Çıktı biçimi, sayfadaki gömülü verilerle aynıdır:
 //   table:    "Takım|G|B|M|AG|YG"
@@ -14,6 +17,8 @@ import { dirname, join } from "node:path";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const PAGE = join(ROOT, "web", "index.html");
 const OUT = join(ROOT, "web", "data.json");
+const SEED = join(ROOT, "scripts", "absences-seed.json");
+const SEASON = 2026; // API-Football sezon numarası (2026-27 sezonu)
 
 // football-data.org ücretsiz paketindeki ligler → sayfadaki lig adı
 const COMPETITIONS = {
@@ -42,6 +47,33 @@ const ALIASES = {
   "Brighton & Hove Albion FC": "Brighton",
   "Wolverhampton Wanderers FC": "Wolverhampton",
   "Athletic Club": "Athletic Bilbao",
+  // Eksik oyuncu listelerindeki kısa adlar
+  "Man City": "Manchester City",
+  "Man United": "Manchester United",
+  "Bayern Munich": "Bayern Münih",
+  "Bayern München": "Bayern Münih",
+  "Inter Milan": "Inter",
+  "Inter": "Inter",
+  "PSG": "Paris Saint-Germain",
+  "B. M'gladbach": "Mönchengladbach",
+  "Borussia Mönchengladbach": "Mönchengladbach",
+  "Borussia Monchengladbach": "Mönchengladbach",
+  // API-Football Süper Lig adları
+  "Amed SFK": "Amedspor",
+  "Amed Sportif Faaliyetler": "Amedspor",
+  "Amedspor": "Amedspor",
+  "BB Erzurumspor": "Erzurumspor",
+  "Erzurum BB": "Erzurumspor",
+  "Erzurumspor FK": "Erzurumspor",
+  "Istanbul Basaksehir": "Başakşehir",
+  "Corum FK": "Çorum FK",
+  "Corum Belediyespor": "Çorum FK",
+};
+
+// API-Football lig numaraları
+const AF_LEAGUES = {
+  "Premier League": 39, "La Liga": 140, "Serie A": 135, "Bundesliga": 78,
+  "Ligue 1": 61, "Şampiyonlar Ligi": 2, "Süper Lig": 203,
 };
 
 // ---------- Ad eşleştirme ----------
@@ -155,7 +187,116 @@ function buildLeague(code, json, known) {
     .sort((a, b) => Date.parse(a.utcDate) - Date.parse(b.utcDate))
     .map(m => `${m.utcDate}|${nm(m.homeTeam)}|${nm(m.awayTeam)}`).join("\n");
 
-  return { table, halves, fixtures, played: ordered.reduce((s, [, r]) => s + r.W + r.D + r.L, 0) / 2 };
+  // Ev sahibi avantajı için lig genelinde ev ve deplasman golleri (bitmiş maçlar)
+  const home = { hg: 0, ag: 0, n: 0, hw: 0, d: 0, aw: 0 };
+  for (const m of tableMatches) {
+    if (m.status !== "FINISHED") continue;
+    const ft = m.score?.regularTime ?? m.score?.fullTime;
+    if (ft?.home == null || ft?.away == null) continue;
+    home.hg += ft.home; home.ag += ft.away; home.n++;
+    if (ft.home > ft.away) home.hw++; else if (ft.home < ft.away) home.aw++; else home.d++;
+  }
+
+  return { table, halves, fixtures, home, names, played: ordered.reduce((s, [, r]) => s + r.W + r.D + r.L, 0) / 2 };
+}
+
+// ---------- Gol katkısı (football-data) ----------
+
+async function getScorers(code) {
+  if (process.env.FD_MOCK_DIR) {
+    try { return JSON.parse(readFileSync(join(process.env.FD_MOCK_DIR, code + "-scorers.json"), "utf8")); } catch { return { scorers: [] }; }
+  }
+  const res = await fetch(`https://api.football-data.org/v4/competitions/${code}/scorers?limit=100`, {
+    headers: { "X-Auth-Token": process.env.FOOTBALL_DATA_TOKEN },
+  });
+  if (!res.ok) throw new Error(`${code} gol listesi: HTTP ${res.status}`);
+  return res.json();
+}
+
+/** "Takım|Oyuncu|Gol|Asist" satırları */
+function buildScorers(json, names, known) {
+  const list = json.scorers || [];
+  const unknown = list.map(x => x.team).filter(t => t?.id && !names.has(t.id));
+  const extra = unknown.length ? buildNameMap(unknown, known) : new Map();
+  return list.filter(x => x.player?.name && x.team?.id)
+    .map(x => `${names.get(x.team.id) ?? extra.get(x.team.id)}|${x.player.name}|${x.goals ?? 0}|${x.assists ?? 0}`)
+    .join("\n");
+}
+
+// ---------- API-Football: eksik oyuncular ve Süper Lig ----------
+
+let afRemaining = Infinity;
+async function af(path) {
+  if (process.env.FD_MOCK_DIR) {
+    const f = join(process.env.FD_MOCK_DIR, "AF-" + path.replace(/[^a-z0-9]+/gi, "-") + ".json");
+    return afCheck(JSON.parse(readFileSync(f, "utf8")));
+  }
+  if (afRemaining < 5) throw new Error("günlük istek hakkı bitmek üzere, atlandı");
+  const res = await fetch("https://v3.football.api-sports.io/" + path, { headers: { "x-apisports-key": process.env.API_FOOTBALL_KEY } });
+  const rem = Number(res.headers.get("x-ratelimit-requests-remaining"));
+  if (Number.isFinite(rem)) afRemaining = rem;
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return afCheck(await res.json());
+}
+function afCheck(j) {
+  const errs = j.errors && (Array.isArray(j.errors) ? j.errors : Object.values(j.errors));
+  if (errs && errs.length) throw new Error(errs.join("; "));
+  return j;
+}
+
+/** API-Football maçlarını football-data biçimine çevirir (tablo hesabı aynı koddan geçsin diye) */
+function afToMatches(j) {
+  const done = new Set(["FT", "AET", "PEN"]), sched = new Set(["NS", "TBD"]);
+  return {
+    matches: (j.response || []).map(x => ({
+      utcDate: x.fixture?.date,
+      status: done.has(x.fixture?.status?.short) ? "FINISHED" : sched.has(x.fixture?.status?.short) ? "TIMED" : "OTHER",
+      homeTeam: { id: x.teams?.home?.id, name: x.teams?.home?.name },
+      awayTeam: { id: x.teams?.away?.id, name: x.teams?.away?.name },
+      score: {
+        fullTime: { home: x.score?.fulltime?.home ?? x.goals?.home, away: x.score?.fulltime?.away ?? x.goals?.away },
+        halfTime: { home: x.score?.halftime?.home, away: x.score?.halftime?.away },
+      },
+    })),
+  };
+}
+
+/** Yaklaşan maçlarda forma giyemeyecek ya da şüpheli oyuncular */
+function afAbsences(j, known, lg) {
+  const now = Date.now(), until = now + FIXTURE_DAYS * 864e5;
+  const rows = (j.response || []).filter(x => {
+    const t = Date.parse(x.fixture?.date); return t > now - 3 * 3600e3 && t < until;
+  });
+  const teams = new Map(rows.map(x => [x.team.id, x.team]));
+  const names = buildNameMap([...teams.values()], known);
+  return rows.map(x => ({
+    lg, t: names.get(x.team.id), p: x.player?.name,
+    s: /questionable/i.test(x.player?.type || "") ? "doubt" : "out",
+    r: reasonTr(x.player?.reason), on: x.fixture?.date,
+  }));
+}
+
+// ---------- Yedek eksik oyuncu listesi ----------
+
+function reasonTr(r = "") {
+  if (/card|suspen|ceza/i.test(r)) return "Cezalı";
+  if (/ill|virus/i.test(r)) return "Hastalık";
+  if (/not registered|inactive/i.test(r)) return "Kadroda değil";
+  if (/cruciate/i.test(r)) return "Çapraz bağ";
+  if (/^other$|^-?$/i.test(r.trim())) return "Belirsiz neden";
+  return "Sakatlık";
+}
+
+function seedAbsences(seed, known, lg) {
+  const lines = seed.leagues?.[lg] || [];
+  const raw = lines.map(l => l.split("|"));
+  const teams = new Map(raw.map(([t]) => [t, { id: t, name: t }]));
+  const names = buildNameMap([...teams.values()], known);
+  const today = new Date().toISOString().slice(0, 10);
+  const seen = new Set();
+  return raw.filter(([, , , , to]) => to === "-" || !to || to >= today)
+    .filter(([t, p]) => !seen.has(t + p) && seen.add(t + p))
+    .map(([t, p, pos, r, to]) => ({ lg, t: names.get(t), p, pos, s: "out", r: reasonTr(r), to: to && to !== "-" ? to : null }));
 }
 
 // ---------- Ana akış ----------
@@ -168,16 +309,21 @@ async function main() {
     process.exit(1);
   }
   const known = knownNames();
-  const leagues = {}, errors = [];
+  const allKnown = [...new Set(Object.values(known).flat())];
+  const leagues = {}, errors = [], status = { absences: {}, unmatched: [] };
   const codes = Object.keys(COMPETITIONS);
   for (const [i, code] of codes.entries()) {
     const name = COMPETITIONS[code];
     try {
-      const lg = buildLeague(code, await getMatches(code), known[name] || []);
+      const lg = buildLeague(code, await getMatches(code), code === "CL" ? allKnown : known[name] || []);
       if (!lg.table) throw new Error(`${code}: maç bulunamadı`);
-      leagues[name] = { table: lg.table, halves: lg.halves, fixtures: lg.fixtures };
+      leagues[name] = { table: lg.table, halves: lg.halves, fixtures: lg.fixtures, home: lg.home };
       console.log(`✓ ${name}: ${lg.table.split("\n").length} takım, ${lg.played} maç, ` +
-        `${lg.fixtures ? lg.fixtures.split("\n").length : 0} yaklaşan maç`);
+        `${lg.fixtures ? lg.fixtures.split("\n").length : 0} yaklaşan maç, ev golleri ${lg.home.hg}-${lg.home.ag}`);
+      if (!process.env.FD_MOCK_DIR) await sleep(7000);
+      try {
+        leagues[name].scorers = buildScorers(await getScorers(code), lg.names, code === "CL" ? allKnown : known[name] || []);
+      } catch (e) { console.warn(`  gol katkısı alınamadı: ${e.message}`); }
     } catch (e) {
       errors.push(e.message);
       console.warn(`✗ ${name}: ${e.message}`);
@@ -189,9 +335,41 @@ async function main() {
     console.error("Hiçbir lig güncellenemedi; önceki yayın olduğu gibi kalacak.");
     process.exit(1);
   }
-  const out = { updated: new Date().toISOString(), source: "football-data.org", leagues };
+
+  // Eksik oyuncular: önce API-Football, alınamayan ligler için yedek liste
+  const absences = [];
+  const hasAF = !!(process.env.API_FOOTBALL_KEY || process.env.FD_MOCK_DIR && process.env.AF_MOCK);
+  if (hasAF) {
+    // Süper Lig maçları (football-data'da yok)
+    try {
+      const sl = buildLeague("SL", afToMatches(await af(`fixtures?league=203&season=${SEASON}`)), known["Süper Lig"] || []);
+      if (!sl.table) throw new Error("maç bulunamadı");
+      leagues["Süper Lig"] = { table: sl.table, halves: sl.halves, fixtures: sl.fixtures, home: sl.home };
+      const unk = [...sl.names.values()].filter(n => !(known["Süper Lig"] || []).includes(n));
+      if (unk.length) status.unmatched.push(...unk.map(n => "Süper Lig: " + n));
+      console.log(`✓ Süper Lig (API-Football): ${sl.table.split("\n").length} takım, ${sl.played} maç`);
+    } catch (e) { errors.push("Süper Lig: " + e.message); console.warn(`✗ Süper Lig (API-Football): ${e.message}`); }
+    for (const [lg, id] of Object.entries(AF_LEAGUES)) {
+      try {
+        const rows = afAbsences(await af(`injuries?league=${id}&season=${SEASON}`), lg === "Şampiyonlar Ligi" ? allKnown : known[lg] || [], lg);
+        absences.push(...rows);
+        status.absences[lg] = { source: "API-Football", count: rows.length };
+        console.log(`✓ Eksikler ${lg}: ${rows.length} kayıt`);
+      } catch (e) { console.warn(`✗ Eksikler ${lg}: ${e.message}`); status.absences[lg] = { error: e.message }; }
+    }
+  }
+  let seed = null;
+  try { seed = JSON.parse(readFileSync(SEED, "utf8")); } catch { /* yedek yok */ }
+  if (seed) for (const lg of Object.keys(seed.leagues || {})) {
+    if (status.absences[lg]?.source) continue;
+    const rows = seedAbsences(seed, known[lg] || [], lg);
+    absences.push(...rows);
+    status.absences[lg] = { ...(status.absences[lg] || {}), source: `${seed.source} (${seed.updated})`, count: rows.length };
+  }
+
+  const out = { updated: new Date().toISOString(), source: "football-data.org", leagues, absences, status };
   writeFileSync(OUT, JSON.stringify(out));
-  console.log(`web/data.json yazıldı (${Object.keys(leagues).length} lig${errors.length ? `, ${errors.length} hata` : ""}).`);
+  console.log(`web/data.json yazıldı (${Object.keys(leagues).length} lig, ${absences.length} eksik oyuncu kaydı${errors.length ? `, ${errors.length} hata` : ""}).`);
 }
 
 main().catch(e => { console.error(e); process.exit(1); });

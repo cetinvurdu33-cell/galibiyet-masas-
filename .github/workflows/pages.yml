@@ -36,6 +36,8 @@ jobs:
       - name: Güncel verileri çek
         env:
           FOOTBALL_DATA_TOKEN: ${{ secrets.FOOTBALL_DATA_TOKEN }}
+          # İsteğe bağlı: sakat/cezalı oyuncular ve Süper Lig maçları için
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
         run: |
           if [ -z "$FOOTBALL_DATA_TOKEN" ]; then
             echo "::warning::FOOTBALL_DATA_TOKEN eklenmemiş, veriler güncellenmedi."

@@ -102,6 +102,20 @@ footer{font-size:12px;color:var(--muted)}
 .how summary{cursor:pointer;color:var(--accent);font-weight:600}
 .how p{max-width:70ch}
 .muted{color:var(--muted);font-size:12px}
+.venue{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px;color:var(--muted)}
+.venue select{width:auto;flex:1 1 200px}
+.fx .bl{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:-4px}
+.rbar{display:flex;height:22px;border-radius:5px;overflow:hidden;font-size:11px;font-weight:600;font-variant-numeric:tabular-nums}
+.rbar div{display:flex;align-items:center;justify-content:center;min-width:0;overflow:hidden;white-space:nowrap;color:var(--bg)}
+.absn{display:flex;flex-direction:column;gap:4px;font-size:13px;margin-top:8px}
+.absn:empty{display:none}
+.absn .row{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.absn .who{color:var(--muted);min-width:0}
+.absn .hit{font-variant-numeric:tabular-nums;color:var(--loss);font-weight:600;white-space:nowrap}
+.absn details{font-size:12px;color:var(--muted)}
+.absn summary{cursor:pointer;color:var(--accent);font-weight:600}
+.absn ul{margin:4px 0 0;padding-left:18px}
+.absn .src{font-size:11px;color:var(--muted)}
 .search{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .search input{font:inherit;flex:1 1 240px;min-width:0;padding:10px 12px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
 .search input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
@@ -159,19 +173,29 @@ mark{background:var(--accent-soft);color:inherit;border-radius:2px}
       <label><span class="sr" hidden>Takım B</span><select id="selB"></select></label>
     </div>
     <div class="rows" id="cmpRows"></div>
-    <div>
-      <div class="eyebrow" style="margin-bottom:6px">Basit maç tahmini</div>
-      <div class="est" id="est"></div>
+    <div class="venue">
+      <label for="venue">Maç nerede?</label>
+      <select id="venue">
+        <option value="A">Soldaki takımın sahasında</option>
+        <option value="B">Sağdaki takımın sahasında</option>
+        <option value="N">Tarafsız saha</option>
+      </select>
     </div>
-    <p class="note">Tahmin yalnızca bu sezonki galibiyet, beraberlik ve mağlubiyet oranlarından türetilir; saha avantajı, sakatlık ve kadro bilgisi hesaba katılmaz. Sezonun başında örneklem küçük olduğu için oranlar hızlı değişir.</p>
+    <div>
+      <div class="eyebrow" style="margin-bottom:6px">Maç tahmini</div>
+      <div class="est" id="est"></div>
+      <div class="absn" id="cmpAbs"></div>
+    </div>
+    <p class="note">Tahmin, iki takımın gol üretme ve gol yeme güçlerinden, seçtiğiniz sahaya göre ev sahibi avantajından ve bugün itibarıyla sakat ya da cezalı oyunculardan hesaplanır. Sezonun başında örneklem küçük olduğu için oranlar hızlı değişir.</p>
   </section>
 
   <section class="halves" aria-label="Yarı tahmini">
     <div>
       <div class="eyebrow">Oynanacak maçlar</div>
-      <h2 id="hTitle">Hangi yarı daha gollü?</h2>
-      <p class="sub">Her maç için ilk yarı mı ikinci yarı mı daha çok gol göreceğinin olasılığı. Seçili lige göre değişir.</p>
+      <h2 id="hTitle">Maç analizi</h2>
+      <p class="sub">Her maç için sonuç olasılıkları ve hangi yarının daha gollü geçeceği. Ev sahibi avantajı ile sakat ve cezalı oyuncular hesaba katılır.</p>
     </div>
+    <div class="legend"><span style="--c:var(--win)">1: ev sahibi kazanır</span><span style="--c:var(--draw)">X: beraberlik</span><span style="--c:var(--loss)">2: deplasman kazanır</span></div>
     <div class="legend"><span style="--c:var(--h1)">1. yarı daha gollü</span><span style="--c:var(--line)">Eşit</span><span style="--c:var(--h2)">2. yarı daha gollü</span></div>
     <div class="search">
       <label for="fxSearch" class="sr" hidden>Maç ara</label>
@@ -182,6 +206,9 @@ mark{background:var(--accent-soft);color:inherit;border-radius:2px}
     <details class="how">
       <summary>Tahmin nasıl hesaplanıyor?</summary>
       <p>Her takımın maç başına attığı ve yediği gol, son 3 sezonun sezon sonu tablolarından hesaplanır. Yakın sezonlar daha ağır sayılır (2023-24 ×1, 2024-25 ×2, 2025-26 ×3). Bu geçmiş değer, bu sezonun gerçek ortalamasıyla harmanlanır; geçmiş yaklaşık 10 maçlık bir ağırlık taşır, bu yüzden sezon ilerledikçe güncel form öne geçer. Maçın beklenen golü, iki takımın hücum ve savunma değerlerinden çıkar.</p>
+      <p><b>Ev sahibi avantajı.</b> Her ligde bu sezon ev sahiplerinin attığı gollerin toplam gollere oranı ölçülür. Bu oran, Avrupa liglerinde uzun yıllardır görülen yaklaşık %55'lik payla harmanlanır; böylece az maç oynanmışken tek tük sonuçlar oranı savurmaz. Oran %55 ise ev sahibinin beklenen golü %10 artar, deplasman takımınınki %10 azalır.</p>
+      <p><b>Sakat ve cezalı oyuncular.</b> Maç günü forma giyemeyecek oyuncular takımın hücum gücünü, oyuncunun bu sezonki gol ve asist katkısıyla orantılı olarak düşürür. Takımın gollerinin üçte birini atan bir oyuncu eksikse hücum yaklaşık %20 azalır, çünkü yerine oynayan da bir miktar katkı verir. Her eksik oyuncu ayrıca savunmayı biraz zayıflatır; kaleci ve defans oyuncularında bu etki daha büyüktür. Şüpheli oyuncular yarım sayılır. Hücum kaybı en fazla %25, savunma kaybı en fazla %10 olabilir.</p>
+      <p>Sonuç olasılıkları (1, X, 2), iki takımın beklenen gollerinden Poisson dağılımıyla hesaplanır. Kesinleşmiş ilk 11'ler maçtan kısa süre önce açıklandığı için modele dahil değildir.</p>
       <p>Sonra bu gol beklentisi iki yarıya bölünür. Süper Lig'de 2025-26 sezonunda gollerin yaklaşık %57'si ikinci yarıda atıldı; bu oran kullanılır. Diğer liglerde varsayılan pay %55'tir. Premier League ve La Liga'da takımların bu sezonki ilk yarı/ikinci yarı gol dağılımı da hesaba katılır. Her yarının golleri Poisson dağılımıyla modellenir ve üç sonucun olasılığı hesaplanır.</p>
       <p>Geçmiş sezonlar için takım bazında yarı gol verisi güvenilir bir kaynakta bulunamadı; bu yüzden yarı payında geçmiş yalnızca lig düzeyinde yer alıyor. Bu bir eğlence amaçlı istatistik tahminidir, bahis tavsiyesi değildir.</p>
     </details>
@@ -673,7 +700,7 @@ function pickers(reset){
   $("selA").innerHTML=opts; $("selB").innerHTML=opts;
   if(reset){ $("selA").selectedIndex=0; $("selB").selectedIndex=1; }
 }
-["selA","selB"].forEach(id=>$(id).addEventListener("change",compare));
+["selA","selB","venue"].forEach(id=>$(id).addEventListener("change",compare));
 
 function compare(){
   const f=n=>data[league].find(x=>x.n===n);
@@ -691,10 +718,14 @@ function compare(){
     row("Harmanlanmış galibiyet",A.bWin,B.bWin,pct(A.bWin),pct(B.bWin))+
     row("Yenilmezlik oranı",A.unb,B.unb,pct(A.unb),pct(B.unb))+
     row("Puan",A.pts,B.pts,A.pts,B.pts);
-  // Basit tahmin: A'nın kazanma eğilimi ile B'nin kaybetme eğiliminin ortalaması (ve tersi)
-  if(A.n===B.n){ $("est").innerHTML=`<div style="flex:1;background:var(--muted)">Aynı takımı seçtiniz</div>`; return; }
-  let pa=(A.bWin+B.bLoss)/2, pb=(B.bWin+A.bLoss)/2, pd=(A.bDraw+B.bDraw)/2;
-  const s=pa+pb+pd||1; pa/=s; pb/=s; pd/=s;
+  if(A.n===B.n){ $("est").innerHTML=`<div style="flex:1;background:var(--muted)">Aynı takımı seçtiniz</div>`; $("cmpAbs").innerHTML=""; return; }
+  // Model: hücum/savunma güçleri + seçilen saha + bugünkü eksik oyuncular
+  const v=$("venue").value, now=new Date().toISOString();
+  const m = v==="B" ? matchModel(league,B.n,A.n,now,false) : matchModel(league,A.n,B.n,now,v==="N");
+  const r = v==="B" ? {a:m.p2,d:m.px,b:m.p1} : {a:m.p1,d:m.px,b:m.p2};
+  const pa=r.a, pd=r.d, pb=r.b;
+  const [ia,ib] = v==="B" ? [m.ia,m.ih] : [m.ih,m.ia];
+  $("cmpAbs").innerHTML = absHTML(A.n,ia)+absHTML(B.n,ib);
   $("est").innerHTML = `
     <div style="flex:${pa};background:var(--win)" title="${A.n} kazanır">${pa>.12?A.n.split(" ")[0]+" "+pct(pa):""}</div>
     <div style="flex:${pd};background:var(--draw)" title="Beraberlik">${pd>.12?"X "+pct(pd):""}</div>
@@ -783,10 +814,72 @@ function halfProbs(l1,l2){
   for(let i=0;i<=N;i++){ const pi=pois(l1,i); for(let j=0;j<=N;j++){ const pj=pois(l2,j)*pi; if(i>j)a+=pj; else if(i===j)eq+=pj; else b+=pj; } }
   const s=a+eq+b; return {h1:a/s,eq:eq/s,h2:b/s};
 }
-function expectedGoals(lg,home,away){
-  const H=data[lg].find(t=>t.n===home), A=data[lg].find(t=>t.n===away);
-  if(!H||!A) return LONG_AVG;
-  return (H.att + A.def)/2 + (A.att + H.def)/2;
+// ---- Ev sahibi avantajı ----
+// data.json her ligin bu sezonki ev/deplasman gollerini getirir; uzun dönem payıyla (%55) harmanlanır.
+const HOME = {};
+const HOME_PRIOR = 0.55, HOME_PRIOR_GOALS = 300;
+function homeShare(lg){
+  const h=HOME[lg]; if(!h) return HOME_PRIOR;
+  return (h.hg + HOME_PRIOR*HOME_PRIOR_GOALS)/(h.hg + h.ag + HOME_PRIOR_GOALS);
+}
+
+// ---- Sakat ve cezalı oyuncular ----
+let ABSENCES = [];          // {lg,t,p,pos?,s:"out"|"doubt",r,on?|to?}
+const SCORERS = {};         // takım → [{p,g,a,lg}]
+let ABS_SRC = {};           // lig → kaynak bilgisi
+const pkey = n => { const t=norm(n).replace(/[^a-z0-9 .]/g," ").split(/[\s.]+/).filter(Boolean); return {last:t[t.length-1]||"", first:(t[0]||"")[0]||"", single:t.length<2}; };
+function scorerOf(team,player){
+  const k=pkey(player);
+  return (SCORERS[team]||[]).find(x=>{ const s=pkey(x.p); return s.last===k.last && (s.first===k.first||s.single||k.single); });
+}
+function teamGF(team,lg){
+  for(const L of [lg,...Object.keys(data)]){ const t=data[L]?.find(x=>x.n===team); if(t&&t.gf!=null) return t.gf; }
+  return null;
+}
+const istDay = new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Istanbul"});
+// Belirli bir maç saatinde takımın eksikleri ve gücüne etkisi
+function impact(team,lg,iso){
+  const k=Date.parse(iso), day=istDay.format(new Date(iso));
+  const list=[];
+  for(const a of ABSENCES){
+    if(a.t!==team) continue;
+    let w=0;
+    if(a.on){ if(Math.abs(Date.parse(a.on)-k)<6*3600e3) w = a.s==="doubt"?0.5:1; }
+    else if(a.to===null||a.to===undefined) w = a.s==="doubt"?0.5:1;
+    else if(a.to>day) w = a.s==="doubt"?0.5:1;
+    else if(a.to===day) w = 0.5;
+    if(!w || list.some(x=>x.p===a.p)) continue;
+    const sc=scorerOf(team,a.p), gf=sc?(teamGF(team,sc.lg)??0):0;
+    const share = sc ? Math.min(0.6,(sc.g+0.5*sc.a)/Math.max(gf,6)) : 0;
+    const dw = {G:0.03,D:0.02,M:0.008,F:0.004}[a.pos] ?? 0.01;
+    list.push({...a,w,share,sc,dw});
+  }
+  const attLoss=Math.min(0.25,list.reduce((s,x)=>s+x.w*(0.6*x.share+0.01),0));
+  const defLoss=Math.min(0.10,list.reduce((s,x)=>s+x.w*x.dw,0));
+  list.sort((a,b)=>b.w*b.share-a.w*a.share || b.w-a.w || a.p.localeCompare(b.p,"tr"));
+  return {list, att:1-attLoss, def:1+defLoss, attLoss, defLoss};
+}
+
+// Maç modeli: beklenen goller ve 1-X-2 olasılıkları
+function matchModel(lg,home,away,iso,neutral){
+  const H=data[lg]?.find(t=>t.n===home), A=data[lg]?.find(t=>t.n===away);
+  const half=LONG_AVG/2;
+  const bh = H&&A ? (H.att + A.def)/2 : half, ba = H&&A ? (A.att + H.def)/2 : half;
+  const hs = neutral ? 0.5 : homeShare(lg);
+  const ih=impact(home,lg,iso), ia=impact(away,lg,iso);
+  const lh = bh*2*hs*ih.att*ia.def, la = ba*2*(1-hs)*ia.att*ih.def;
+  let p1=0,px=0,p2=0;
+  for(let i=0;i<=12;i++){ const pi=pois(lh,i); for(let j=0;j<=12;j++){ const pj=pi*pois(la,j); if(i>j)p1+=pj; else if(i===j)px+=pj; else p2+=pj; } }
+  const s=p1+px+p2;
+  return {lh,la,tot:lh+la,p1:p1/s,px:px/s,p2:p2/s,ih,ia,hs};
+}
+function absHTML(team,im){
+  if(!im.list.length) return "";
+  const names=im.list.slice(0,3).map(x=>esc(x.p)+(x.w<1?" (şüpheli)":"")).join(", ")+(im.list.length>3?` ve ${im.list.length-3} oyuncu daha`:"");
+  const hit=[im.attLoss>=0.005?`hücum −${Math.round(im.attLoss*100)}%`:"", im.defLoss>=0.005?`savunma −${Math.round(im.defLoss*100)}%`:""].filter(Boolean).join(" · ");
+  const det=im.list.map(x=>`<li>${esc(x.p)} · ${esc(x.r||"")}${x.w<1?" · şüpheli":""}${x.sc?` · ${x.sc.g} gol, ${x.sc.a} asist`:""}${x.to?` · dönüş ${x.to.split("-").reverse().slice(0,2).join(".")}`:""}</li>`).join("");
+  return `<div class="row"><span class="who"><b>${esc(team)}</b> eksik: ${names}</span><span class="hit">${hit}</span></div>
+    <details><summary>${esc(team)} eksik listesi (${im.list.length})</summary><ul>${det}</ul></details>`;
 }
 // Maçın ikinci yarı payı: lig payı, takımların bu sezonki yarı dağılımıyla (varsa) harmanlanır
 function secondShare(lg,home,away){
@@ -814,32 +907,41 @@ function halves(){
       const [iso,h,a]=r.split("|"); if(upcoming(iso)&&(norm(h).includes(q)||norm(a).includes(q))) rows.push({lg,iso,h,a});
     }));
     rows.sort((x,y)=>new Date(x.iso)-new Date(y.iso));
-    $("hTitle").textContent = "Arama sonuçları · hangi yarı daha gollü?";
+    $("hTitle").textContent = "Arama sonuçları · maç analizi";
     $("fxCount").textContent = rows.length? `${rows.length} maç bulundu, tüm liglerde` : "";
     if(!rows.length){ $("fixtures").innerHTML=`<div class="empty">“${esc($("fxSearch").value.trim())}” için yaklaşan maç bulunamadı. Takım adını farklı yazmayı deneyin (ör. “Bayern”, “PSG” yerine “Paris”).</div>`; return; }
   } else {
     const src=FIXTURES[league];
-    $("hTitle").textContent = league+" · hangi yarı daha gollü?";
+    $("hTitle").textContent = league+" · maç analizi";
     $("fxCount").textContent = "";
     if(!src){ $("fixtures").innerHTML=`<div class="empty">${league} için yaklaşan maç programı bu sayfaya eklenmedi. Tahminler şu an Süper Lig, Premier League, La Liga, Serie A, Bundesliga, Ligue 1 ve Şampiyonlar Ligi maçları için var. Yukarıdan tüm liglerde takım arayabilirsiniz.</div>`; return; }
     rows=src.trim().split("\n").map(r=>{ const [iso,h,a]=r.split("|"); return {lg:league,iso,h,a}; }).filter(r=>upcoming(r.iso));
     if(!rows.length){ $("fixtures").innerHTML=`<div class="empty">${league} için önümüzdeki günlerde maç görünmüyor. Program güncellendikçe burada çıkacak.</div>`; return; }
   }
   $("fixtures").innerHTML = rows.map(({lg,iso,h,a})=>{
-    const tot=expectedGoals(lg,h,a), share=secondShare(lg,h,a);
+    const m=matchModel(lg,h,a,iso,false), tot=m.tot, share=secondShare(lg,h,a);
     const p=halfProbs(tot*(1-share),tot*share);
     const lab = p.h2>p.h1 ? (p.h2>p.eq?"2. yarı":"Eşitlik öne çıkıyor") : (p.h1>p.eq?"1. yarı":"Eşitlik öne çıkıyor");
     const lbl=(x,t)=>x>.14?`${t} ${pct(x)}`:"";
+    const f1=x=>x.toFixed(1).replace(".",",");
     return `<article class="fx">
-      <div class="when"><span>${dtf.format(new Date(iso))}</span><span>Beklenen gol ${tot.toFixed(1).replace(".",",")}</span></div>
+      <div class="when"><span>${dtf.format(new Date(iso))}</span><span>Beklenen gol ${f1(tot)}</span></div>
       ${q?`<div class="lg">${lg}</div>`:""}
       <div class="teams">${hl(h,q)} <small>vs</small> ${hl(a,q)}</div>
+      <div class="bl">Maç sonucu · beklenen skor ${f1(m.lh)} – ${f1(m.la)}</div>
+      <div class="rbar" role="img" aria-label="${esc(h)} kazanır ${pct(m.p1)}, beraberlik ${pct(m.px)}, ${esc(a)} kazanır ${pct(m.p2)}">
+        <div style="flex:${m.p1};background:var(--win)">${lbl(m.p1,"1")}</div>
+        <div style="flex:${m.px};background:var(--draw)">${lbl(m.px,"X")}</div>
+        <div style="flex:${m.p2};background:var(--loss)">${lbl(m.p2,"2")}</div>
+      </div>
+      <div class="bl">Hangi yarı daha gollü</div>
       <div class="hbar" role="img" aria-label="1. yarı daha gollü ${pct(p.h1)}, eşit ${pct(p.eq)}, 2. yarı daha gollü ${pct(p.h2)}">
         <div class="h1" style="flex:${p.h1}">${lbl(p.h1,"1Y")}</div>
         <div class="eq" style="flex:${p.eq}">${lbl(p.eq,"=")}</div>
         <div class="h2" style="flex:${p.h2}">${lbl(p.h2,"2Y")}</div>
       </div>
-      <div class="verdict"><span>Tahmin: <b>${lab}</b></span><span>1Y ${(tot*(1-share)).toFixed(1).replace(".",",")} · 2Y ${(tot*share).toFixed(1).replace(".",",")} gol</span></div>
+      <div class="verdict"><span>Tahmin: <b>${lab}</b></span><span>1Y ${f1(tot*(1-share))} · 2Y ${f1(tot*share)} gol</span></div>
+      ${(m.ih.list.length||m.ia.list.length)?`<div class="absn">${absHTML(h,m.ih)}${absHTML(a,m.ia)}<span class="src">${absSrc(lg)}</span></div>`:""}
     </article>`;
   }).join("");
 }
@@ -858,7 +960,12 @@ function applyData(j){
     if(v.table) LEAGUES[lg]=v.table;
     if(v.halves) CUR_HALVES[lg]=v.halves;
     if(typeof v.fixtures==="string") FIXTURES[lg]=v.fixtures;
+    if(v.home) HOME[lg]=v.home;
+    if(v.scorers) v.scorers.trim().split("\n").forEach(r=>{ const [t,p,g,a]=r.split("|"); if(!t||!p) return;
+      (SCORERS[t] ??= []).push({p,g:+g||0,a:+a||0,lg}); });
   });
+  if(Array.isArray(j.absences)) ABSENCES=j.absences;
+  ABS_SRC = j.status?.absences || {};
   build();
   if(!data[league]) league="Süper Lig";
   const a=$("selA").value, b=$("selB").value;
@@ -868,9 +975,16 @@ function applyData(j){
   const when=dfmt.format(new Date(j.updated)), auto=Object.keys(j.leagues);
   $("asOf").textContent=when;
   const manual=Object.keys(LEAGUES).filter(k=>!auto.includes(k));
-  $("dataNote").textContent=`${auto.join(", ")} verileri ${when} tarihinde otomatik güncellendi (kaynak: football-data.org).`+
-    (manual.length?` ${manual.join(" ve ")} verileri 14 Ekim 2026 tarihlidir.`:"");
+  const bySrc={}; Object.entries(ABS_SRC).forEach(([lg,v])=>{ if(v.source) (bySrc[v.source] ??= []).push(lg); });
+  const absNote=Object.entries(bySrc).map(([s,l])=>`${l.join(", ")} için ${s.replace(/\((\d{4})-(\d{2})-(\d{2})\)/,(x,y,mo,d)=>`(${+d}.${mo}.${y})`)}`).join("; ");
+  $("dataNote").textContent=`${auto.join(", ")} verileri ${when} tarihinde otomatik güncellendi (maçlar ve goller: football-data.org${auto.includes("Süper Lig")?", Süper Lig: API-Football":""}).`+
+    (manual.length?` ${manual.join(", ")} verileri 14 Ekim 2026 tarihlidir.`:"")+
+    (absNote?` Sakat ve cezalı oyuncular: ${absNote}.`:"");
   return true;
+}
+function absSrc(lg){
+  const v=ABS_SRC[lg]; if(!v||!v.source) return "";
+  return "Eksik oyuncu kaynağı: "+esc(v.source.replace(/\((\d{4})-(\d{2})-(\d{2})\)/,(x,y,mo,d)=>`(${+d}.${mo}.${y} listesi)`));
 }
 fetch("data.json",{cache:"no-cache"}).then(r=>r.ok?r.json():null).then(applyData).catch(()=>{});
 </script>
