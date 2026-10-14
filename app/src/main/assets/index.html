@@ -1,0 +1,837 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light dark}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Galibiyet Masası</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: scoreboard header + league chips, summary strip, ranked win-rate table, two-team comparison panel */
+:root{
+  --bg:#f3f5f2; --surface:#ffffff; --ink:#14201c; --muted:#5d6b66; --line:#d9e0dc;
+  --accent:#1f6b4f; --accent-soft:#e2efe8;
+  --win:#2e8a5c; --draw:#c9952b; --loss:#c4473a; --h1:#3b6fa8; --h2:#8a4fa0;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1714; --surface:#16211d; --ink:#e7eeea; --muted:#94a39d; --line:#2a3833;
+  --accent:#5cbf93; --accent-soft:#1d3229; --win:#4cae7e; --draw:#d9a843; --loss:#e06a5c; --h1:#7aa8dc; --h2:#c590d8; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1714; --surface:#16211d; --ink:#e7eeea; --muted:#94a39d; --line:#2a3833;
+  --accent:#5cbf93; --accent-soft:#1d3229; --win:#4cae7e; --draw:#d9a843; --loss:#e06a5c; --h1:#7aa8dc; --h2:#c590d8; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+.wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+h1,h2{font-family:var(--display);font-weight:700;letter-spacing:.01em;margin:0;text-wrap:balance;line-height:1.05}
+h1{font-size:clamp(34px,7vw,52px);text-transform:uppercase}
+h2{font-size:22px;text-transform:uppercase}
+.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);font-weight:600}
+.sub{color:var(--muted);max-width:62ch;margin:6px 0 0}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.chip{flex:none;font-family:var(--display);font-size:17px;font-weight:600;padding:7px 14px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.chip:focus-visible,select:focus-visible,.sortbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.stat{background:var(--surface);padding:12px 14px;min-width:0}
+.stat .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.stat .v{font-family:var(--display);font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
+.stat .t{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-head{display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap}
+.sorts{display:flex;gap:6px;flex-wrap:wrap}
+.sortbtn{font:inherit;font-size:13px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer}
+.sortbtn[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);font-weight:600}
+.tablebox{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;min-width:560px}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;text-align:right;padding:10px 10px;border-bottom:1px solid var(--line)}
+th.l,td.l{text-align:left}
+td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+tbody tr{cursor:pointer}
+tbody tr:hover td{background:var(--accent-soft)}
+.rank{color:var(--muted);width:28px}
+.team{font-weight:600}
+.wdl{display:flex;height:10px;border-radius:3px;overflow:hidden;width:120px;background:var(--line)}
+.wdl i{display:block;height:100%}
+.w{background:var(--win)}.d{background:var(--draw)}.lo{background:var(--loss)}
+.pct{font-family:var(--display);font-size:19px;font-weight:700}
+.pill{display:inline-block;font-size:11px;font-weight:600;padding:2px 7px;border-radius:999px;border:1px solid currentColor}
+.p-hot{color:var(--win)}.p-mid{color:var(--draw)}.p-cold{color:var(--loss)}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px;background:var(--c)}
+.cmp{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:14px}
+.pickers{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center}
+.pickers .vs{font-family:var(--display);font-weight:700;color:var(--muted)}
+select{font:inherit;width:100%;min-width:0;padding:8px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.rows{display:flex;flex-direction:column;gap:10px}
+.crow{display:grid;grid-template-columns:52px 1fr 52px;gap:8px;align-items:center;font-variant-numeric:tabular-nums}
+.crow .lab{grid-column:1/-1;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;text-align:center;margin-bottom:-4px}
+.crow .a{text-align:right;font-weight:600}.crow .b{font-weight:600}
+.dual{display:flex;height:8px;gap:2px}
+.dual i{display:block;height:100%;border-radius:2px}
+.est{display:flex;height:30px;border-radius:6px;overflow:hidden;font-size:12px;font-weight:600;color:var(--bg)}
+.est div{display:flex;align-items:center;justify-content:center;min-width:0;overflow:hidden}
+.note{font-size:13px;color:var(--muted);max-width:70ch}
+footer{font-size:12px;color:var(--muted)}
+.halves{display:flex;flex-direction:column;gap:12px}
+.fixtures{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:10px}
+.fx{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.fx .when{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
+.fx .teams{font-family:var(--display);font-size:20px;font-weight:600;line-height:1.15}
+.fx .teams small{font-family:var(--body);font-size:12px;color:var(--muted);font-weight:500}
+.hbar{display:flex;height:22px;border-radius:5px;overflow:hidden;font-size:11px;font-weight:600;font-variant-numeric:tabular-nums}
+.hbar div{display:flex;align-items:center;justify-content:center;min-width:0;overflow:hidden;white-space:nowrap}
+.hbar .h1{background:var(--h1);color:var(--bg)}.hbar .eq{background:var(--line);color:var(--ink)}.hbar .h2{background:var(--h2);color:var(--bg)}
+.verdict{font-size:13px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.verdict b{font-weight:600}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:8px;padding:16px;color:var(--muted)}
+.how{font-size:14px;color:var(--muted)}
+.how summary{cursor:pointer;color:var(--accent);font-weight:600}
+.how p{max-width:70ch}
+.muted{color:var(--muted);font-size:12px}
+.search{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.search input{font:inherit;flex:1 1 240px;min-width:0;padding:10px 12px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.search input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.fx .lg{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);font-weight:600}
+mark{background:var(--accent-soft);color:inherit;border-radius:2px}
+.tr{font-size:11px;margin-left:2px}.tr.up{color:var(--win)}.tr.down{color:var(--loss)}.tr.flat{color:var(--muted)}
+.spark{display:flex;align-items:flex-end;gap:2px;height:24px}
+.spark i{display:block;width:7px;background:var(--muted);border-radius:1px;opacity:.55}
+.spark i.none{background:var(--line);opacity:1}
+.spark i.now{background:var(--accent);opacity:1;margin-left:3px}
+@media (max-width:520px){.pickers{grid-template-columns:1fr}.pickers .vs{text-align:center}}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">2026-27 sezonu · 14 Ekim 2026 itibarıyla</div>
+    <h1>Galibiyet Masası</h1>
+    <p class="sub">Bu sezon takımlar maçlarının ne kadarını kazanıyor? Bir lig seçin, sıralamayı değiştirin, iki takımı karşılaştırın.</p>
+  </header>
+
+  <nav class="chips" id="chips" aria-label="Lig seçimi"></nav>
+
+  <section class="summary" id="summary" aria-label="Lig özeti"></section>
+
+  <section style="display:flex;flex-direction:column;gap:10px">
+    <div class="bar-head">
+      <h2 id="tblTitle">Galibiyet oranları</h2>
+      <div class="sorts" id="sorts" role="group" aria-label="Sıralama">
+        <button class="sortbtn" data-k="win" aria-pressed="true">Galibiyet %</button>
+        <button class="sortbtn" data-k="ppg">Maç başı puan</button>
+        <button class="sortbtn" data-k="pts">Puan</button>
+        <button class="sortbtn" data-k="unb">Yenilmezlik %</button>
+        <button class="sortbtn" data-k="hwin">Son 3 sezon %</button>
+        <button class="sortbtn" data-k="bWin">Harmanlanmış %</button>
+      </div>
+    </div>
+    <div class="legend"><span style="--c:var(--win)">Galibiyet</span><span style="--c:var(--draw)">Beraberlik</span><span style="--c:var(--loss)">Mağlubiyet</span></div>
+    <div class="tablebox">
+      <table>
+        <thead><tr><th class="l">#</th><th class="l">Takım</th><th>O</th><th>G-B-M</th><th class="l">Dağılım</th><th>Galibiyet</th><th>Son 3 sezon</th><th class="l">Sezonlar</th><th>Harman.</th><th>P/Maç</th><th>Puan</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <p class="note">Bir satıra dokunun; takım karşılaştırmada ilk sıraya geçer.</p>
+  </section>
+
+  <section class="cmp" aria-label="Karşılaştırma">
+    <h2>İki takımı karşılaştır</h2>
+    <div class="pickers">
+      <label><span class="sr" hidden>Takım A</span><select id="selA"></select></label>
+      <span class="vs">VS</span>
+      <label><span class="sr" hidden>Takım B</span><select id="selB"></select></label>
+    </div>
+    <div class="rows" id="cmpRows"></div>
+    <div>
+      <div class="eyebrow" style="margin-bottom:6px">Basit maç tahmini</div>
+      <div class="est" id="est"></div>
+    </div>
+    <p class="note">Tahmin yalnızca bu sezonki galibiyet, beraberlik ve mağlubiyet oranlarından türetilir; saha avantajı, sakatlık ve kadro bilgisi hesaba katılmaz. Sezonun başında örneklem küçük olduğu için oranlar hızlı değişir.</p>
+  </section>
+
+  <section class="halves" aria-label="Yarı tahmini">
+    <div>
+      <div class="eyebrow">Oynanacak maçlar</div>
+      <h2 id="hTitle">Hangi yarı daha gollü?</h2>
+      <p class="sub">Her maç için ilk yarı mı ikinci yarı mı daha çok gol göreceğinin olasılığı. Seçili lige göre değişir.</p>
+    </div>
+    <div class="legend"><span style="--c:var(--h1)">1. yarı daha gollü</span><span style="--c:var(--line)">Eşit</span><span style="--c:var(--h2)">2. yarı daha gollü</span></div>
+    <div class="search">
+      <label for="fxSearch" class="sr" hidden>Maç ara</label>
+      <input id="fxSearch" type="search" placeholder="Takım ara: ör. Fenerbahçe, Real Madrid" autocomplete="off">
+      <span class="muted" id="fxCount"></span>
+    </div>
+    <div class="fixtures" id="fixtures"></div>
+    <details class="how">
+      <summary>Tahmin nasıl hesaplanıyor?</summary>
+      <p>Her takımın maç başına attığı ve yediği gol, son 3 sezonun sezon sonu tablolarından hesaplanır. Yakın sezonlar daha ağır sayılır (2023-24 ×1, 2024-25 ×2, 2025-26 ×3). Bu geçmiş değer, bu sezonun gerçek ortalamasıyla harmanlanır; geçmiş yaklaşık 10 maçlık bir ağırlık taşır, bu yüzden sezon ilerledikçe güncel form öne geçer. Maçın beklenen golü, iki takımın hücum ve savunma değerlerinden çıkar.</p>
+      <p>Sonra bu gol beklentisi iki yarıya bölünür. Süper Lig'de 2025-26 sezonunda gollerin yaklaşık %57'si ikinci yarıda atıldı; bu oran kullanılır. Diğer liglerde varsayılan pay %55'tir. Premier League ve La Liga'da takımların bu sezonki ilk yarı/ikinci yarı gol dağılımı da hesaba katılır. Her yarının golleri Poisson dağılımıyla modellenir ve üç sonucun olasılığı hesaplanır.</p>
+      <p>Geçmiş sezonlar için takım bazında yarı gol verisi güvenilir bir kaynakta bulunamadı; bu yüzden yarı payında geçmiş yalnızca lig düzeyinde yer alıyor. Bu bir eğlence amaçlı istatistik tahminidir, bahis tavsiyesi değildir.</p>
+    </details>
+  </section>
+
+  <footer>Kaynak: Avrupa ligleri, Şampiyonlar Ligi ve MLS için Sportradar verisi; Süper Lig için sabah.com.tr puan durumu ve milligazete.com.tr 8. hafta fikstürü; Süper Lig yarı dağılımı için sabah.com.tr'nin 2025-26 sezon değerlendirmesi; Premier League ve La Liga yarı golleri için soccerstats.com; 2023-24, 2024-25 ve 2025-26 sezon sonu tabloları için Wikipedia. "Harmanlanmış" oran, bu sezonu son 3 sezonla birleştirir. Şampiyonlar Ligi geçmişi yalnızca grup ve lig aşaması maçlarını içerir, eleme turları dahil değildir. MLS için geçmiş sezon verisi eklenmedi. Veriler 14 Ekim 2026'da alındı ve sayfa açıldığında güncellenmez. Şampiyonlar Ligi'nde takımlar farklı sayıda maç oynamış olabilir.</footer>
+</div>
+
+<script>
+// Format: "Takım|G|B|M"
+const LEAGUES = {
+  "Süper Lig": `Galatasaray|5|1|1|16|11
+Beşiktaş|5|0|2|16|8
+Amedspor|4|2|1|17|9
+Fenerbahçe|4|1|2|19|6
+Trabzonspor|4|1|2|16|5
+Alanyaspor|3|3|1|8|6
+Kocaelispor|4|0|3|8|6
+Çorum FK|3|1|3|16|12
+Kasımpaşa|2|4|1|8|8
+Çaykur Rizespor|3|1|3|7|9
+Başakşehir|2|2|3|10|11
+Gaziantep FK|2|2|3|7|10
+Gençlerbirliği|2|2|3|7|15
+Erzurumspor|2|2|3|3|11
+Göztepe|1|3|3|15|15
+Konyaspor|1|2|4|4|8
+Samsunspor|1|1|5|6|15
+Eyüpspor|1|0|6|2|20`,
+  "Premier League": `Manchester City|6|0|0
+Arsenal|5|0|1
+Brighton|4|1|1
+Brentford|2|4|0
+Everton|2|4|0
+Chelsea|3|1|2
+Leeds United|2|3|1
+Hull City|2|3|1
+Liverpool|2|3|1
+Ipswich Town|3|0|3
+Newcastle United|2|2|2
+Crystal Palace|2|1|3
+Manchester United|1|3|2
+Coventry City|2|0|4
+Nottingham Forest|1|2|3
+Aston Villa|1|2|3
+Sunderland|1|1|4
+Bournemouth|0|3|3
+Tottenham|0|3|3
+Fulham|0|2|4`,
+  "La Liga": `Barcelona|8|0|0
+Atlético Madrid|6|1|1
+Real Betis|6|1|1
+Real Madrid|6|0|2
+Sevilla|4|2|2
+Real Sociedad|4|1|3
+Alavés|3|2|3
+Deportivo La Coruña|2|4|2
+Celta Vigo|1|5|2
+Athletic Bilbao|2|2|2
+Villarreal|2|2|4
+Espanyol|2|2|4
+Rayo Vallecano|2|2|3
+Getafe|2|2|4
+Racing Santander|2|2|4
+Osasuna|2|2|4
+Levante|1|3|3
+Elche|1|3|4
+Valencia|1|2|5
+Málaga|0|4|4`,
+  "Serie A": `Inter|5|1|0
+Lazio|5|1|0
+Roma|4|2|0
+Cagliari|4|1|1
+Milan|3|3|0
+Juventus|3|2|1
+Como|3|2|1
+Napoli|3|1|2
+Frosinone|3|1|2
+Atalanta|3|0|3
+Sassuolo|2|2|2
+Torino|2|1|3
+Lecce|2|0|4
+Bologna|1|2|3
+Udinese|1|1|4
+Monza|1|1|4
+Genoa|1|1|4
+Parma|1|1|4
+Fiorentina|1|1|4
+Venezia|0|0|6`,
+  "Bundesliga": `Freiburg|4|1|0
+Borussia Dortmund|4|1|0
+Bayern Münih|3|2|0
+Bayer Leverkusen|3|1|1
+RB Leipzig|3|0|2
+Augsburg|2|2|1
+Werder Bremen|2|2|1
+Mainz|2|1|2
+Elversberg|2|1|2
+Köln|2|1|2
+Stuttgart|2|0|3
+Hamburger SV|2|0|3
+Schalke 04|1|2|2
+Eintracht Frankfurt|1|2|2
+Paderborn|1|1|3
+Union Berlin|1|1|3
+Hoffenheim|1|0|4
+Mönchengladbach|0|0|5`,
+  "Ligue 1": `Monaco|4|2|0
+Lille|4|1|1
+Rennes|4|1|1
+Lyon|3|2|1
+Paris FC|3|2|1
+Paris Saint-Germain|3|2|1
+Brest|2|2|2
+Lorient|2|2|2
+Nice|2|2|2
+Lens|2|1|3
+Strasbourg|2|1|3
+Angers|2|1|3
+Marseille|2|0|4
+Le Mans|1|3|2
+Toulouse|1|3|2
+Auxerre|2|0|4
+Troyes|1|1|4
+Le Havre|0|2|4`,
+  "Şampiyonlar Ligi": `Barcelona|2|0|0
+Sporting CP|2|0|0
+Arsenal|2|0|0
+Bayern Münih|1|1|0
+Paris Saint-Germain|1|0|0
+Como|1|0|0
+Manchester United|1|0|1
+Stuttgart|1|0|0
+Manchester City|1|0|0
+Villarreal|1|0|1
+Aston Villa|1|0|0
+Real Betis|1|0|0
+Atlético Madrid|1|0|1
+Borussia Dortmund|1|0|0
+Liverpool|1|0|0
+Real Madrid|1|0|0
+AEK Atina|1|0|0
+Club Brugge|1|0|1
+Lens|1|0|1
+RB Leipzig|1|0|1
+Sabah|1|0|1
+Roma|0|1|0
+Şahtar Donetsk|0|1|0
+Fenerbahçe|0|1|0
+PSV|0|1|1
+Viking|0|1|1
+LASK|0|0|1
+Inter|0|0|2
+Porto|0|0|1
+Slavia Prag|0|0|2
+Napoli|0|0|2
+Lille|0|0|2
+Feyenoord|0|0|1
+Galatasaray|0|0|2
+Slovan Bratislava|0|0|1
+Bodø/Glimt|0|0|1`,
+  "MLS": `Nashville SC|19|6|3
+Vancouver Whitecaps|15|6|7
+St. Louis City|14|8|6
+Inter Miami|13|10|5
+Chicago Fire|14|6|8
+FC Dallas|13|8|7
+New England Revolution|14|4|10
+Charlotte FC|13|7|8
+San Jose Earthquakes|13|7|8
+Houston Dynamo|13|6|9
+Philadelphia Union|12|6|10
+LAFC|11|9|9
+Seattle Sounders|11|8|9
+Colorado Rapids|11|4|13
+Orlando City|11|4|13
+New York Red Bulls|10|6|12
+FC Cincinnati|9|9|9
+LA Galaxy|9|9|11
+Portland Timbers|9|6|13
+New York City FC|8|9|11
+Real Salt Lake|9|5|14
+San Diego FC|8|8|12
+Toronto FC|7|11|10
+Austin FC|7|10|11
+Minnesota United|7|9|12
+DC United|6|12|9
+Columbus Crew|8|5|15
+Atlanta United|7|6|15
+CF Montréal|6|6|16
+Sporting Kansas City|6|4|18`
+};
+
+const parse = s => s.trim().split("\n").map(r=>{
+  const [n,w,d,l,gf,ga]=r.split("|"); const W=+w,D=+d,L=+l,P=W+D+L, pts=W*3+D;
+  return {n,W,D,L,P,pts,gf:gf===undefined?null:+gf,ga:ga===undefined?null:+ga,win:P?W/P:0,ppg:P?pts/P:0,unb:P?(W+D)/P:0,draw:P?D/P:0,loss:P?L/P:0};
+});
+const data = Object.fromEntries(Object.entries(LEAGUES).map(([k,v])=>[k,parse(v)]));
+
+// Geçmiş 3 sezon (sezon sonu tabloları, Wikipedia): "Takım|23-24|24-25|25-26", her sezon "G,B,M,AG,YG" ya da "-" (o ligde değildi)
+const HISTORY = {
+"Süper Lig":`Galatasaray|33,3,2,92,26|30,5,1,91,31|24,5,5,77,30
+Beşiktaş|16,8,14,52,47|17,11,8,59,36|17,9,8,59,40
+Fenerbahçe|31,6,1,99,31|26,6,4,90,39|21,11,2,77,37
+Trabzonspor|21,4,13,69,50|13,12,11,58,45|20,9,5,61,39
+Alanyaspor|12,16,10,53,50|12,9,15,43,50|7,16,11,41,41
+Kocaelispor|-|-|9,10,15,26,38
+Kasımpaşa|16,8,14,62,65|11,14,11,62,63|8,11,15,33,49
+Çaykur Rizespor|14,8,16,48,58|15,4,17,52,58|10,11,13,46,52
+Başakşehir|18,7,13,57,43|16,6,14,60,56|16,9,9,58,35
+Gaziantep FK|12,8,18,50,57|12,9,15,45,50|9,10,15,43,58
+Gençlerbirliği|-|-|9,7,18,36,47
+Göztepe|-|13,11,12,59,50|14,13,7,42,32
+Konyaspor|9,14,15,40,53|13,7,16,45,50|10,10,14,43,50
+Samsunspor|11,10,17,42,52|19,7,10,55,41|13,12,9,46,45
+Eyüpspor|-|15,8,13,52,47|8,9,17,33,48`,
+"Premier League":`Manchester City|28,7,3,96,34|21,8,9,72,44|23,9,6,77,35
+Arsenal|28,5,5,91,29|20,14,4,69,34|26,7,5,71,27
+Brighton|12,12,14,55,62|16,13,9,66,59|14,11,13,52,46
+Brentford|10,9,19,56,65|16,8,14,66,57|14,11,13,55,52
+Everton|13,9,16,40,51|11,15,12,42,44|13,10,15,47,50
+Chelsea|18,9,11,77,63|20,9,9,64,43|14,10,14,58,52
+Leeds United|-|-|11,14,13,49,56
+Liverpool|24,10,4,86,41|25,9,4,86,41|17,9,12,63,53
+Ipswich Town|-|4,10,24,36,82|-
+Newcastle United|18,6,14,85,62|20,6,12,68,47|14,7,17,53,55
+Crystal Palace|13,10,15,57,58|13,14,11,51,51|11,12,15,41,51
+Manchester United|18,6,14,57,58|11,9,18,44,54|20,11,7,69,50
+Nottingham Forest|9,9,20,49,67|19,8,11,58,46|11,11,16,48,51
+Aston Villa|20,8,10,76,61|19,9,10,58,51|19,8,11,56,49
+Sunderland|-|-|14,12,12,42,48
+Bournemouth|13,9,16,54,67|15,11,12,58,46|13,18,7,58,54
+Tottenham|20,6,12,74,61|11,5,22,64,65|10,11,17,48,57
+Fulham|13,8,17,55,61|15,9,14,54,54|15,7,16,47,51`,
+"La Liga":`Barcelona|26,7,5,79,44|28,4,6,102,39|31,1,6,95,36
+Atlético Madrid|24,4,10,70,43|22,10,6,68,30|21,6,11,62,44
+Real Betis|14,15,9,48,45|16,12,10,57,50|15,15,8,59,48
+Real Madrid|29,8,1,87,26|26,6,6,78,38|27,5,6,77,35
+Sevilla|10,11,17,48,54|10,11,17,42,55|12,7,19,46,60
+Real Sociedad|16,12,10,51,39|13,7,18,35,46|11,13,14,59,61
+Alavés|12,10,16,36,46|10,12,16,38,48|11,10,17,44,56
+Celta Vigo|10,11,17,46,57|16,7,15,59,57|14,12,12,53,48
+Athletic Bilbao|19,11,8,61,37|19,13,6,54,29|13,6,19,43,58
+Villarreal|14,11,13,65,65|20,10,8,71,51|22,6,10,72,46
+Espanyol|-|11,9,18,40,51|12,10,16,43,55
+Rayo Vallecano|8,14,16,29,48|13,13,12,41,45|12,14,12,41,44
+Getafe|10,13,15,42,54|11,9,18,34,39|15,6,17,32,38
+Osasuna|12,9,17,45,56|12,16,10,48,52|11,9,18,44,50
+Levante|-|-|11,9,18,47,61
+Elche|-|-|10,13,15,49,57
+Valencia|13,10,15,40,45|11,13,14,44,54|13,10,15,46,55`,
+"Serie A":`Inter|29,7,2,89,22|24,9,5,79,35|27,6,5,89,35
+Lazio|18,7,13,49,39|18,11,9,61,49|14,12,12,41,40
+Roma|18,9,11,65,46|20,9,9,56,35|23,4,11,59,31
+Cagliari|8,12,18,42,68|9,9,20,40,56|11,10,17,40,53
+Milan|22,9,7,76,49|18,9,11,61,43|20,10,8,53,35
+Juventus|19,14,5,54,31|18,16,4,58,35|19,12,7,61,34
+Como|-|13,10,15,49,52|20,11,7,65,29
+Napoli|13,14,11,55,48|24,10,4,59,27|23,7,8,58,36
+Frosinone|8,11,19,44,69|-|-
+Atalanta|21,6,11,72,42|22,8,8,78,37|15,14,9,51,36
+Sassuolo|7,9,22,43,75|-|14,7,17,46,50
+Torino|13,14,11,36,36|10,14,14,39,45|12,9,17,44,63
+Lecce|8,14,16,32,54|8,10,20,27,58|10,8,20,28,50
+Bologna|18,14,6,54,32|16,14,8,57,47|16,8,14,49,46
+Udinese|6,19,13,37,53|12,8,18,41,56|14,8,16,45,48
+Monza|11,12,15,39,51|3,9,26,28,69|-
+Genoa|12,13,13,45,45|10,13,15,37,49|10,11,17,41,51
+Parma|-|7,15,16,44,58|11,12,15,28,46
+Fiorentina|17,9,12,61,46|19,8,11,60,41|9,15,14,41,50
+Venezia|-|5,14,19,32,56|-`,
+"Bundesliga":`Freiburg|11,9,14,45,58|16,7,11,49,53|13,8,13,51,57
+Borussia Dortmund|18,9,7,68,43|17,6,11,71,51|22,7,5,70,34
+Bayern Münih|23,3,8,94,45|25,7,2,99,32|28,5,1,122,36
+Bayer Leverkusen|28,6,0,89,24|19,12,3,72,43|17,8,9,68,47
+RB Leipzig|19,8,7,77,39|13,12,9,53,48|20,5,9,66,47
+Augsburg|10,9,15,50,60|11,10,13,35,51|12,7,15,45,61
+Werder Bremen|11,9,14,48,54|14,9,11,54,57|8,8,18,37,60
+Mainz|7,14,13,39,51|14,10,10,55,43|10,10,14,44,53
+Köln|5,12,17,28,60|-|7,11,16,49,63
+Stuttgart|23,4,7,78,39|14,8,12,64,53|18,8,8,71,49
+Hamburger SV|-|-|9,11,14,40,54
+Eintracht Frankfurt|11,14,9,51,50|17,9,8,68,46|11,11,12,61,65
+Union Berlin|9,6,19,33,58|10,10,14,35,51|10,9,15,44,58
+Hoffenheim|13,7,14,66,66|7,11,16,46,68|18,7,9,65,52
+Mönchengladbach|7,13,14,56,67|13,6,15,55,57|9,11,14,42,53`,
+"Ligue 1":`Monaco|20,7,7,68,42|18,7,9,63,41|16,6,12,60,54
+Lille|16,11,7,52,34|17,9,8,52,36|18,7,9,52,37
+Rennes|12,10,12,53,46|13,2,19,51,50|17,8,9,59,50
+Lyon|16,5,13,49,55|17,6,11,65,46|18,6,10,53,40
+Paris FC|-|-|11,11,12,47,50
+Paris Saint-Germain|22,10,2,81,33|26,6,2,92,35|24,4,6,74,29
+Brest|17,10,7,53,34|15,5,14,52,59|10,9,15,43,55
+Lorient|7,8,19,43,66|-|11,12,11,48,51
+Nice|15,10,9,40,29|17,9,8,66,41|7,11,16,37,60
+Lens|14,9,11,45,37|15,7,12,42,39|22,4,8,66,35
+Strasbourg|10,9,15,38,50|16,9,9,56,44|15,8,11,58,47
+Angers|-|10,6,18,32,53|9,9,16,29,48
+Marseille|13,11,10,52,41|20,5,9,74,47|18,5,11,63,45
+Toulouse|11,10,13,42,46|11,9,14,44,43|12,9,13,47,46
+Auxerre|-|11,9,14,48,51|8,10,16,34,44
+Le Havre|7,11,16,34,45|10,4,20,40,71|7,14,13,32,44`,
+// Şampiyonlar Ligi: 2023-24 grup aşaması, 2024-25 ve 2025-26 lig aşaması (eleme turları hariç)
+"Şampiyonlar Ligi":`Barcelona|4,0,2,12,6|6,1,1,28,13|5,1,2,22,14
+Sporting CP|-|3,2,3,13,12|5,1,2,17,11
+Arsenal|4,1,1,16,4|6,1,1,16,3|8,0,0,23,4
+Bayern Münih|5,1,0,12,6|5,0,3,20,12|7,0,1,22,8
+Paris Saint-Germain|2,2,2,9,8|4,1,3,14,9|4,2,2,21,11
+Manchester United|1,1,4,12,15|-|-
+Stuttgart|-|3,1,4,13,17|-
+Manchester City|6,0,0,18,7|3,2,3,18,14|5,1,2,15,9
+Villarreal|-|-|0,1,7,5,18
+Aston Villa|-|5,1,2,13,6|-
+Atlético Madrid|4,2,0,17,6|6,0,2,20,12|4,1,3,17,15
+Borussia Dortmund|3,2,1,7,4|5,0,3,22,12|3,2,3,19,17
+Liverpool|-|7,0,1,17,5|6,0,2,20,8
+Real Madrid|6,0,0,16,7|5,0,3,20,12|5,0,3,21,12
+Club Brugge|-|3,2,3,7,11|3,1,4,15,17
+Lens|2,2,2,6,11|-|-
+RB Leipzig|4,0,2,13,10|1,0,7,8,15|-
+Şahtar Donetsk|3,0,3,10,12|2,1,5,8,16|-
+PSV|2,3,1,8,10|4,2,2,16,12|2,2,4,16,16
+Inter|3,3,0,8,5|6,1,1,11,1|5,0,3,15,7
+Porto|4,0,2,15,8|-|-
+Slavia Prag|-|-|0,3,5,5,19
+Napoli|3,1,2,10,9|-|2,2,4,9,15
+Lille|-|5,1,2,17,10|-
+Feyenoord|2,0,4,9,10|4,1,3,18,21|-
+Galatasaray|1,2,3,10,13|-|3,1,4,9,11
+Slovan Bratislava|-|0,0,8,7,27|-
+Bodø/Glimt|-|-|2,3,3,14,15`
+};
+// Bu sezon yarı bazlı goller (soccerstats.com): "Takım|1Y atılan|1Y yenen|2Y atılan|2Y yenen"
+const CUR_HALVES = {
+"Premier League":`Manchester City|5|3|11|2
+Arsenal|3|3|7|2
+Brighton|8|4|10|1
+Brentford|5|2|7|4
+Everton|2|1|6|4
+Leeds United|4|1|4|4
+Hull City|4|3|4|3
+Chelsea|9|5|6|8
+Liverpool|2|2|5|5
+Ipswich Town|4|6|5|6
+Newcastle United|4|6|6|7
+Crystal Palace|4|7|5|5
+Manchester United|1|3|8|6
+Coventry City|1|4|4|7
+Nottingham Forest|2|2|3|6
+Aston Villa|2|5|4|6
+Sunderland|3|4|3|8
+Fulham|3|3|3|7
+Bournemouth|5|4|2|9
+Tottenham|0|3|3|6`,
+"La Liga":`Barcelona|16|3|18|4
+Atlético Madrid|5|1|13|7
+Real Betis|8|3|6|6
+Real Madrid|10|2|9|6
+Sevilla|3|5|10|7
+Real Sociedad|7|2|5|13
+Alavés|5|2|7|6
+Deportivo La Coruña|5|6|7|5
+Celta Vigo|4|3|4|3
+Athletic Bilbao|2|2|5|4
+Villarreal|7|8|6|5
+Espanyol|7|6|4|5
+Rayo Vallecano|6|8|5|8
+Getafe|1|4|3|6
+Racing Santander|10|12|3|11
+Osasuna|2|8|6|10
+Levante|3|8|8|7
+Elche|2|10|9|7
+Valencia|2|6|4|9
+Málaga|2|8|2|5`
+};
+const SEASON_W=[1,2,3];   // eski → yeni sezon ağırlıkları
+const K=10;               // geçmişin "kaç maçlık" etkisi olduğu
+
+// Geçmiş özetini hesapla ve takımlara ekle
+Object.entries(data).forEach(([lg,teams])=>{
+  const hist={}; (HISTORY[lg]||"").trim().split("\n").filter(Boolean).forEach(r=>{
+    const [n,...ss]=r.split("|"); hist[n]=ss.map(s=>s==="-"?null:s.split(",").map(Number));
+  });
+  const halves={}; (CUR_HALVES[lg]||"").trim().split("\n").filter(Boolean).forEach(r=>{
+    const [n,a,b,c,d]=r.split("|"); halves[n]={h1f:+a,h1a:+b,h2f:+c,h2a:+d};
+  });
+  // Lig geneli ortalama gol (geçmiş tablolardan)
+  let gSum=0,pSum=0; Object.values(hist).forEach(ss=>ss.forEach(s=>{ if(s){ gSum+=s[3]; pSum+=s[0]+s[1]+s[2]; } }));
+  const lgGoal = pSum? gSum/pSum : 1.35;
+  teams.forEach(t=>{
+    const ss=hist[t.n]; let w=0,W=0,D=0,L=0,GF=0,GA=0,P=0,seasons=[];
+    if(ss) ss.forEach((s,i)=>{ if(!s){ seasons.push(null); return; } const p=s[0]+s[1]+s[2], k=SEASON_W[i];
+      W+=s[0]*k; D+=s[1]*k; L+=s[2]*k; GF+=s[3]*k; GA+=s[4]*k; P+=p*k; seasons.push(s[0]/p); });
+    t.hist = P? {win:W/P,draw:D/P,loss:L/P,gf:GF/P,ga:GA/P,seasons}:null;
+    const hv=halves[t.n]; if(hv){ t.half=hv; if(t.gf==null){ t.gf=hv.h1f+hv.h2f; t.ga=hv.h1a+hv.h2a; } }
+    const bl=(cur,h,has)=> has&&t.P ? (t.P*cur+K*h)/(t.P+K) : (has? h : cur);
+    const H=t.hist;
+    t.bWin=bl(t.win,H?.win,!!H); t.bDraw=bl(t.draw,H?.draw,!!H); t.bLoss=bl(t.loss,H?.loss,!!H);
+    t.hwin = H? H.win : -1;
+    const cgf = t.gf!=null&&t.P ? t.gf/t.P : null, cga = t.ga!=null&&t.P ? t.ga/t.P : null;
+    const mix=(c,h)=> c!=null&&h!=null ? (t.P*c+K*h)/(t.P+K) : (c!=null?c:(h!=null?h:lgGoal));
+    t.att = mix(cgf,H?.gf); t.def = mix(cga,H?.ga);
+  });
+});
+
+const $ = id=>document.getElementById(id);
+const pct = x=>Math.round(x*100)+"%";
+const fmt = x=>x.toFixed(2).replace(".",",");
+let league = "Süper Lig", sortKey = "win";
+try{ const s=localStorage.getItem("gm-league"); if(s && data[s]) league=s; }catch(e){}
+
+function chips(){
+  $("chips").innerHTML = Object.keys(data).map(k=>`<button class="chip" aria-pressed="${k===league}" data-l="${k}">${k}</button>`).join("");
+}
+$("chips").addEventListener("click",e=>{
+  const b=e.target.closest(".chip"); if(!b) return;
+  league=b.dataset.l; try{localStorage.setItem("gm-league",league)}catch(e){}
+  render(true);
+});
+$("sorts").addEventListener("click",e=>{
+  const b=e.target.closest(".sortbtn"); if(!b) return;
+  sortKey=b.dataset.k;
+  document.querySelectorAll(".sortbtn").forEach(x=>x.setAttribute("aria-pressed",x===b));
+  table();
+});
+
+function sorted(){
+  const t=[...data[league]];
+  t.sort((a,b)=>b[sortKey]-a[sortKey] || b.ppg-a.ppg || b.pts-a.pts || b.W-a.W);
+  return t;
+}
+function tag(t){
+  if(t.win>=.6) return '<span class="pill p-hot">Formda</span>';
+  if(t.win<.2 && t.P>=3) return '<span class="pill p-cold">Zorlanıyor</span>';
+  return "";
+}
+function trend(t){
+  const d=t.win-t.hist.win; if(t.P<3||Math.abs(d)<.08) return '<span class="tr flat" title="Geçmişe yakın">→</span>';
+  return d>0?'<span class="tr up" title="Geçmişten iyi">▲</span>':'<span class="tr down" title="Geçmişten kötü">▼</span>';
+}
+function spark(t){
+  const lab=["23-24","24-25","25-26"];
+  const s=(t.hist?.seasons||[null,null,null]);
+  return `<div class="spark">${s.map((v,i)=>`<i style="height:${v==null?2:Math.max(3,v*24)}px" class="${v==null?"none":""}" title="${lab[i]}: ${v==null?"ligde değildi":pct(v)}"></i>`).join("")}<i class="now" style="height:${Math.max(3,t.win*24)}px" title="26-27: ${pct(t.win)}"></i></div>`;
+}
+function summary(){
+  const t=data[league];
+  const tot={W:0,D:0,P:0}; t.forEach(x=>{tot.W+=x.W;tot.D+=x.D;tot.P+=x.P});
+  const best=[...t].sort((a,b)=>b.win-a.win||b.ppg-a.ppg)[0];
+  const unbeaten=t.filter(x=>x.L===0&&x.P>0);
+  const winless=t.filter(x=>x.W===0&&x.P>0);
+  const matches=tot.P/2;
+  $("summary").innerHTML = `
+    <div class="stat"><div class="k">En yüksek galibiyet</div><div class="v">${pct(best.win)}</div><div class="t">${best.n}</div></div>
+    <div class="stat"><div class="k">Beraberlik oranı</div><div class="v">${matches?pct((tot.D/2)/matches):"–"}</div><div class="t">maçların berabere biten kısmı</div></div>
+    <div class="stat"><div class="k">Yenilmeyen</div><div class="v">${unbeaten.length}</div><div class="t">${unbeaten.map(x=>x.n).join(", ")||"Yok"}</div></div>
+    <div class="stat"><div class="k">Galibiyetsiz</div><div class="v">${winless.length}</div><div class="t">${winless.map(x=>x.n).join(", ")||"Yok"}</div></div>`;
+}
+function table(){
+  $("tblTitle").textContent = league+" · galibiyet oranları";
+  $("tbody").innerHTML = sorted().map((t,i)=>`
+    <tr data-n="${t.n}">
+      <td class="l rank">${i+1}</td>
+      <td class="l"><span class="team">${t.n}</span> ${tag(t)}</td>
+      <td>${t.P}</td>
+      <td>${t.W}-${t.D}-${t.L}</td>
+      <td class="l"><div class="wdl" title="${t.W} G, ${t.D} B, ${t.L} M"><i class="w" style="width:${t.win*100}%"></i><i class="d" style="width:${t.draw*100}%"></i><i class="lo" style="width:${t.loss*100}%"></i></div></td>
+      <td><span class="pct">${pct(t.win)}</span></td>
+      <td>${t.hist?`${pct(t.hist.win)} ${trend(t)}`:'<span class="muted" title="Son 3 sezonda bu ligde oynamadı">Yeni</span>'}</td>
+      <td class="l">${spark(t)}</td>
+      <td><strong>${pct(t.bWin)}</strong></td>
+      <td>${fmt(t.ppg)}</td>
+      <td><strong>${t.pts}</strong></td>
+    </tr>`).join("");
+}
+$("tbody").addEventListener("click",e=>{
+  const r=e.target.closest("tr"); if(!r) return;
+  $("selA").value=r.dataset.n; if($("selB").value===r.dataset.n){ $("selB").selectedIndex = $("selA").selectedIndex===0?1:0; }
+  compare(); $("selA").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth",block:"center"});
+});
+
+function pickers(reset){
+  const t=[...data[league]].sort((a,b)=>b.pts-a.pts);
+  const opts=t.map(x=>`<option>${x.n}</option>`).join("");
+  $("selA").innerHTML=opts; $("selB").innerHTML=opts;
+  if(reset){ $("selA").selectedIndex=0; $("selB").selectedIndex=1; }
+}
+["selA","selB"].forEach(id=>$(id).addEventListener("change",compare));
+
+function compare(){
+  const f=n=>data[league].find(x=>x.n===n);
+  const A=f($("selA").value), B=f($("selB").value); if(!A||!B) return;
+  const row=(lab,a,b,fa,fb)=>{
+    const s=(a+b)||1;
+    return `<div class="crow"><div class="lab">${lab}</div><div class="a">${fa}</div>
+      <div class="dual"><i style="width:${a/s*100}%;background:var(--accent)"></i><i style="width:${b/s*100}%;background:var(--muted)"></i></div>
+      <div class="b">${fb}</div></div>`;
+  };
+  $("cmpRows").innerHTML =
+    row("Galibiyet oranı",A.win,B.win,pct(A.win),pct(B.win))+
+    row("Maç başı puan",A.ppg,B.ppg,fmt(A.ppg),fmt(B.ppg))+
+    row("Son 3 sezon galibiyet",A.hist?.win??0,B.hist?.win??0,A.hist?pct(A.hist.win):"Yeni",B.hist?pct(B.hist.win):"Yeni")+
+    row("Harmanlanmış galibiyet",A.bWin,B.bWin,pct(A.bWin),pct(B.bWin))+
+    row("Yenilmezlik oranı",A.unb,B.unb,pct(A.unb),pct(B.unb))+
+    row("Puan",A.pts,B.pts,A.pts,B.pts);
+  // Basit tahmin: A'nın kazanma eğilimi ile B'nin kaybetme eğiliminin ortalaması (ve tersi)
+  if(A.n===B.n){ $("est").innerHTML=`<div style="flex:1;background:var(--muted)">Aynı takımı seçtiniz</div>`; return; }
+  let pa=(A.bWin+B.bLoss)/2, pb=(B.bWin+A.bLoss)/2, pd=(A.bDraw+B.bDraw)/2;
+  const s=pa+pb+pd||1; pa/=s; pb/=s; pd/=s;
+  $("est").innerHTML = `
+    <div style="flex:${pa};background:var(--win)" title="${A.n} kazanır">${pa>.12?A.n.split(" ")[0]+" "+pct(pa):""}</div>
+    <div style="flex:${pd};background:var(--draw)" title="Beraberlik">${pd>.12?"X "+pct(pd):""}</div>
+    <div style="flex:${pb};background:var(--loss)" title="${B.n} kazanır">${pb>.12?B.n.split(" ")[0]+" "+pct(pb):""}</div>`;
+}
+
+// ---- Yarı tahmini ----
+// Fikstür: "ISO tarih|Ev|Deplasman|evKazanır%|depKazanır%" (olasılıklar Sportradar; Süper Lig'de yok)
+const FIXTURES = {
+  "Şampiyonlar Ligi": `2026-10-14T16:45:00Z|Feyenoord|Como
+2026-10-14T16:45:00Z|LASK|Liverpool
+2026-10-14T19:00:00Z|Roma|Real Madrid
+2026-10-14T19:00:00Z|Aston Villa|Fenerbahçe
+2026-10-14T19:00:00Z|Şahtar Donetsk|AEK Atina
+2026-10-14T19:00:00Z|Bodø/Glimt|Borussia Dortmund
+2026-10-14T19:00:00Z|Manchester City|Paris Saint-Germain
+2026-10-14T19:00:00Z|Real Betis|Porto
+2026-10-14T19:00:00Z|Slovan Bratislava|Stuttgart
+2026-10-20T16:45:00Z|Fenerbahçe|Slavia Prag`,
+  "Süper Lig": `2026-10-16T20:00:00+03:00|Çorum FK|Çaykur Rizespor
+2026-10-17T13:30:00+03:00|Erzurumspor|Eyüpspor
+2026-10-17T16:00:00+03:00|Gençlerbirliği|Galatasaray
+2026-10-17T16:00:00+03:00|Amedspor|Konyaspor
+2026-10-17T19:00:00+03:00|Fenerbahçe|Alanyaspor
+2026-10-18T13:30:00+03:00|Kasımpaşa|Samsunspor
+2026-10-18T16:00:00+03:00|Kocaelispor|Göztepe
+2026-10-18T19:00:00+03:00|Başakşehir|Gaziantep FK
+2026-10-19T20:00:00+03:00|Trabzonspor|Beşiktaş`,
+  "Premier League": `2026-10-17T11:30:00Z|Everton|Chelsea|30.3|44.2
+2026-10-17T14:00:00Z|Brentford|Liverpool|39.9|34.7
+2026-10-17T14:00:00Z|Fulham|Hull City|55.6|20.5
+2026-10-17T14:00:00Z|Manchester City|Ipswich Town|79.6|7.8
+2026-10-17T16:30:00Z|Newcastle United|Aston Villa|42.7|31.6
+2026-10-18T13:00:00Z|Bournemouth|Sunderland|45.8|27.6
+2026-10-18T13:00:00Z|Brighton|Crystal Palace|62.2|16.9
+2026-10-18T13:00:00Z|Leeds United|Manchester United|39.3|34.7
+2026-10-18T15:30:00Z|Nottingham Forest|Arsenal|16|60.9
+2026-10-19T19:00:00Z|Tottenham|Coventry City|65.2|15.3`,
+  "La Liga": `2026-10-16T19:00:00Z|Deportivo La Coruña|Levante|44.8|27.7
+2026-10-17T12:00:00Z|Espanyol|Atlético Madrid|20.5|55
+2026-10-17T14:15:00Z|Villarreal|Elche|66.6|15
+2026-10-17T16:30:00Z|Real Betis|Barcelona|16.1|67.1
+2026-10-17T19:00:00Z|Valencia|Athletic Bilbao|28.7|43.1
+2026-10-18T12:00:00Z|Osasuna|Racing Santander|47.2|26.9
+2026-10-18T14:15:00Z|Celta Vigo|Alavés|44.7|26.5
+2026-10-18T16:30:00Z|Málaga|Real Sociedad|29.5|43.6
+2026-10-18T19:00:00Z|Real Madrid|Sevilla|77.3|9
+2026-10-19T19:00:00Z|Getafe|Rayo Vallecano|33.1|35.7`,
+  "Serie A": `2026-10-16T18:45:00Z|Frosinone|Sassuolo|38.5|36
+2026-10-17T13:00:00Z|Venezia|Napoli|19.6|57.3
+2026-10-17T16:00:00Z|Bologna|Inter|17.1|60.9
+2026-10-17T18:45:00Z|Roma|Genoa|69.4|12
+2026-10-18T10:30:00Z|Udinese|Lecce|51.2|22.2
+2026-10-18T13:00:00Z|Fiorentina|Como|27.6|46.5
+2026-10-18T16:00:00Z|Milan|Atalanta|51.1|23.5
+2026-10-18T18:45:00Z|Juventus|Lazio|57.3|18.3
+2026-10-19T16:30:00Z|Monza|Cagliari|40.1|30.4
+2026-10-19T18:45:00Z|Parma|Torino|31.4|38.4`,
+  "Bundesliga": `2026-10-16T18:30:00Z|Eintracht Frankfurt|Köln|49.4|27.7
+2026-10-17T13:30:00Z|Union Berlin|Borussia Dortmund|19.4|59.1
+2026-10-17T13:30:00Z|Hamburger SV|Stuttgart|24.2|52.7
+2026-10-17T13:30:00Z|Werder Bremen|Paderborn|53.6|23
+2026-10-17T13:30:00Z|Schalke 04|Mainz|32.1|42
+2026-10-17T13:30:00Z|Elversberg|Augsburg|39|36.3
+2026-10-17T16:30:00Z|Bayern Münih|RB Leipzig|79.1|9.5
+2026-10-18T13:30:00Z|Bayer Leverkusen|Freiburg|55.6|22.1
+2026-10-18T15:30:00Z|Mönchengladbach|Hoffenheim|31.5|44.6
+2026-10-23T18:30:00Z|Stuttgart|Mönchengladbach|68.8|14.8`,
+  "Ligue 1": `2026-10-16T18:45:00Z|Le Mans|Toulouse|31.7|41.9
+2026-10-17T15:15:00Z|Strasbourg|Paris Saint-Germain|15.1|68
+2026-10-17T18:45:00Z|Lille|Brest|52.7|22.8
+2026-10-17T18:45:00Z|Troyes|Lens|23.6|52.5
+2026-10-18T13:00:00Z|Angers|Marseille|29.4|44.9
+2026-10-18T15:15:00Z|Le Havre|Auxerre|40.6|31.6
+2026-10-18T15:15:00Z|Lorient|Monaco|26.8|46.1
+2026-10-18T15:15:00Z|Paris FC|Rennes|43.1|30.5
+2026-10-18T18:45:00Z|Lyon|Nice|57.2|19.8
+2026-10-23T18:45:00Z|Brest|Nice|43.1|30.5`
+};
+const SECOND_SHARE = {"Süper Lig":0.57};
+const LONG_AVG = 2.8, DEFAULT_SHARE = 0.55;
+
+function pois(l,k){ let p=Math.exp(-l); for(let i=1;i<=k;i++) p*=l/i; return p; }
+function halfProbs(l1,l2){
+  let a=0,eq=0,b=0; const N=12;
+  for(let i=0;i<=N;i++){ const pi=pois(l1,i); for(let j=0;j<=N;j++){ const pj=pois(l2,j)*pi; if(i>j)a+=pj; else if(i===j)eq+=pj; else b+=pj; } }
+  const s=a+eq+b; return {h1:a/s,eq:eq/s,h2:b/s};
+}
+function expectedGoals(lg,home,away){
+  const H=data[lg].find(t=>t.n===home), A=data[lg].find(t=>t.n===away);
+  if(!H||!A) return LONG_AVG;
+  return (H.att + A.def)/2 + (A.att + H.def)/2;
+}
+// Maçın ikinci yarı payı: lig payı, takımların bu sezonki yarı dağılımıyla (varsa) harmanlanır
+function secondShare(lg,home,away){
+  const base=SECOND_SHARE[lg]??DEFAULT_SHARE;
+  const sh=n=>{ const t=data[lg].find(x=>x.n===n); if(!t||!t.half) return base;
+    const h=t.half, s2=h.h2f+h.h2a, tot=h.h1f+h.h1a+s2; return (s2+base*20)/(tot+20); };
+  return (sh(home)+sh(away))/2;
+}
+const dtf = new Intl.DateTimeFormat("tr-TR",{timeZone:"Europe/Istanbul",weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+const norm=s=>s.toLocaleLowerCase("tr").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/ı/g,"i").replace(/ø/g,"o");
+const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function hl(name,q){
+  if(!q) return esc(name);
+  const n=norm(name), i=n.indexOf(q); if(i<0) return esc(name);
+  return esc(name.slice(0,i))+"<mark>"+esc(name.slice(i,i+q.length))+"</mark>"+esc(name.slice(i+q.length));
+}
+function halves(){
+  const q=norm($("fxSearch").value.trim());
+  // Arama boşsa seçili lig; doluysa tüm liglerde ara
+  let rows=[];
+  if(q){
+    Object.entries(FIXTURES).forEach(([lg,src])=>src.trim().split("\n").forEach(r=>{
+      const [iso,h,a]=r.split("|"); if(norm(h).includes(q)||norm(a).includes(q)) rows.push({lg,iso,h,a});
+    }));
+    rows.sort((x,y)=>new Date(x.iso)-new Date(y.iso));
+    $("hTitle").textContent = "Arama sonuçları · hangi yarı daha gollü?";
+    $("fxCount").textContent = rows.length? `${rows.length} maç bulundu, tüm liglerde` : "";
+    if(!rows.length){ $("fixtures").innerHTML=`<div class="empty">“${esc($("fxSearch").value.trim())}” için yaklaşan maç bulunamadı. Takım adını farklı yazmayı deneyin (ör. “Bayern”, “PSG” yerine “Paris”).</div>`; return; }
+  } else {
+    const src=FIXTURES[league];
+    $("hTitle").textContent = league+" · hangi yarı daha gollü?";
+    $("fxCount").textContent = "";
+    if(!src){ $("fixtures").innerHTML=`<div class="empty">${league} için yaklaşan maç programı bu sayfaya eklenmedi. Tahminler şu an Süper Lig, Premier League, La Liga, Serie A, Bundesliga, Ligue 1 ve Şampiyonlar Ligi maçları için var. Yukarıdan tüm liglerde takım arayabilirsiniz.</div>`; return; }
+    rows=src.trim().split("\n").map(r=>{ const [iso,h,a]=r.split("|"); return {lg:league,iso,h,a}; });
+  }
+  $("fixtures").innerHTML = rows.map(({lg,iso,h,a})=>{
+    const tot=expectedGoals(lg,h,a), share=secondShare(lg,h,a);
+    const p=halfProbs(tot*(1-share),tot*share);
+    const lab = p.h2>p.h1 ? (p.h2>p.eq?"2. yarı":"Eşitlik öne çıkıyor") : (p.h1>p.eq?"1. yarı":"Eşitlik öne çıkıyor");
+    const lbl=(x,t)=>x>.14?`${t} ${pct(x)}`:"";
+    return `<article class="fx">
+      <div class="when"><span>${dtf.format(new Date(iso))}</span><span>Beklenen gol ${tot.toFixed(1).replace(".",",")}</span></div>
+      ${q?`<div class="lg">${lg}</div>`:""}
+      <div class="teams">${hl(h,q)} <small>vs</small> ${hl(a,q)}</div>
+      <div class="hbar" role="img" aria-label="1. yarı daha gollü ${pct(p.h1)}, eşit ${pct(p.eq)}, 2. yarı daha gollü ${pct(p.h2)}">
+        <div class="h1" style="flex:${p.h1}">${lbl(p.h1,"1Y")}</div>
+        <div class="eq" style="flex:${p.eq}">${lbl(p.eq,"=")}</div>
+        <div class="h2" style="flex:${p.h2}">${lbl(p.h2,"2Y")}</div>
+      </div>
+      <div class="verdict"><span>Tahmin: <b>${lab}</b></span><span>1Y ${(tot*(1-share)).toFixed(1).replace(".",",")} · 2Y ${(tot*share).toFixed(1).replace(".",",")} gol</span></div>
+    </article>`;
+  }).join("");
+}
+
+$("fxSearch").addEventListener("input",halves);
+function render(reset){ chips(); summary(); table(); pickers(reset); compare(); halves(); }
+render(true);
+</script>
+
+</body>
+</html>

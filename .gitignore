@@ -33,3 +33,10 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+# Android
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
