@@ -1,0 +1,1 @@
+# galibiyet-masas-
