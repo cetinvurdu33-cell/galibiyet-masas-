@@ -37,6 +37,7 @@ const ALIASES = {
   "SK Slavia Praha": "Slavia Prag",
   "FC Shakhtar Donetsk": "Şahtar Donetsk",
   "AEK Athens FC": "AEK Atina",
+  "PAE AEK": "AEK Atina",
   "PSV": "PSV",
   "Brighton & Hove Albion FC": "Brighton",
   "Wolverhampton Wanderers FC": "Wolverhampton",
