@@ -369,6 +369,15 @@ async function main() {
 
   const out = { updated: new Date().toISOString(), source: "football-data.org", leagues, absences, status };
   writeFileSync(OUT, JSON.stringify(out));
+  // GitHub Actions özetinde görünsün diye (kontrol için)
+  if (process.env.GITHUB_ACTIONS) {
+    const homeTxt = Object.entries(leagues).map(([k, v]) => `${k} ${v.home ? v.home.hg + "-" + v.home.ag : "?"}`).join(", ");
+    const absTxt = Object.entries(status.absences).map(([k, v]) => `${k}: ${v.source ? v.source + " " + v.count : "hata"}${v.error ? " (" + v.error.slice(0, 80) + ")" : ""}`).join(" | ");
+    console.log(`::notice title=Ev ve deplasman golleri::${homeTxt}`);
+    console.log(`::notice title=Eksik oyuncular::${absTxt}`);
+    if (errors.length) console.log(`::warning title=Alınamayan veriler::${errors.join(" | ").slice(0, 900)}`);
+    if (status.unmatched.length) console.log(`::warning title=Eşleşmeyen takım adları::${status.unmatched.join(", ")}`);
+  }
   console.log(`web/data.json yazıldı (${Object.keys(leagues).length} lig, ${absences.length} eksik oyuncu kaydı${errors.length ? `, ${errors.length} hata` : ""}).`);
 }
 
