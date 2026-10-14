@@ -231,16 +231,21 @@ async function af(path) {
     const f = join(process.env.FD_MOCK_DIR, "AF-" + path.replace(/[^a-z0-9]+/gi, "-") + ".json");
     return afCheck(JSON.parse(readFileSync(f, "utf8")));
   }
-  if (afRemaining < 5) throw new Error("günlük istek hakkı bitmek üzere, atlandı");
+  if (afRemaining < 5) throw new Error(afRemaining === 0 ? "API-Football paketi bu sezonu kapsamıyor ya da istek hakkı bitti" : "günlük istek hakkı bitmek üzere, atlandı");
   const res = await fetch("https://v3.football.api-sports.io/" + path, { headers: { "x-apisports-key": process.env.API_FOOTBALL_KEY } });
-  const rem = Number(res.headers.get("x-ratelimit-requests-remaining"));
-  if (Number.isFinite(rem)) afRemaining = rem;
+  const remH = res.headers.get("x-ratelimit-requests-remaining");
+  if (remH !== null && remH !== "" && Number.isFinite(Number(remH))) afRemaining = Number(remH);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return afCheck(await res.json());
 }
 function afCheck(j) {
   const errs = j.errors && (Array.isArray(j.errors) ? j.errors : Object.values(j.errors));
-  if (errs && errs.length) throw new Error(errs.join("; "));
+  if (errs && errs.length) {
+    const msg = errs.join("; ");
+    // Paket bu sezonu kapsamıyorsa diğer istekleri boşa harcama
+    if (/do not have access to this season/i.test(msg)) afRemaining = 0;
+    throw new Error(msg);
+  }
   return j;
 }
 
