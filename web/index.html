@@ -1,7 +1,9 @@
 <!doctype html>
-<html lang="tr">
+<html lang="tr" translate="no" class="notranslate">
 <head>
 <meta charset="utf-8">
+<!-- Sayfanın kendi TR/EN seçeneği var; tarayıcının otomatik çevirisi düğmeleri ve adları bozuyor -->
+<meta name="google" content="notranslate">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1f6b4f">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -708,9 +710,8 @@ const I18N = {
   }
 };
 let LANG = "tr";
-try{ const s=localStorage.getItem("gm-lang"); LANG = s==="en"||s==="tr" ? s : ((navigator.language||"tr").toLowerCase().startsWith("tr")?"tr":"en"); }catch(e){
-  LANG = (navigator.language||"tr").toLowerCase().startsWith("tr")?"tr":"en";
-}
+// Varsayılan Türkçe; kullanıcı EN'yi seçerse o cihazda hatırlanır
+try{ const s=localStorage.getItem("gm-lang"); if(s==="en"||s==="tr") LANG=s; }catch(e){}
 // Sayfadaki Türkçe sabit metinleri sözlüğe al
 document.querySelectorAll("[data-i18n]").forEach(el=>{ I18N.tr[el.dataset.i18n] ??= el.textContent; });
 document.querySelectorAll("[data-i18n-html]").forEach(el=>{ I18N.tr[el.dataset.i18nHtml] ??= el.innerHTML; });
