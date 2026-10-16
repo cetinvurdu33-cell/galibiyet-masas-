@@ -51,7 +51,7 @@ API-Football kurulumu (ücretli paket gerekir):
 
 ### Günün kuponu
 
-Her sabah (İstanbul saatiyle 08:00'den sonraki ilk güncellemede) The Odds API'den önümüzdeki 48 saatin bahis oranları çekilir. Ardından sayfadaki modelle, önümüzdeki 36 saatin maçlarından (önceki kuponlarda yer almayanlar) en fazla 6 seçimlik bir kupon hazırlanır (`scripts/coupon.mjs`, sayfayı başsız tarayıcıda açar). Kriter: oran en az 1,80, model olasılığı en az %55. Seçimler, modelle piyasanın ortalaması olan birleşik tahmine göre sıralanır. Kuponlar ve sonuçları önceki yayından devralınarak `couponHistory` içinde tutulur ve sayfada "Kupon karnesi" olarak görünür.
+Her sabah (İstanbul saatiyle 08:00'den sonraki ilk güncellemede) The Odds API'den önümüzdeki 48 saatin bahis oranları çekilir. Ardından sayfadaki modelle, önümüzdeki 36 saatin maçlarından (önceki kuponlarda yer almayanlar) en fazla 6 seçimlik bir kupon hazırlanır (`scripts/coupon.mjs`, sayfayı başsız tarayıcıda açar). Kriter: oran en az 1,80, model olasılığı en az %45 (orta ve yüksek güven). Seçimler takım galibiyeti (1 ya da 2) veya 2,5 Üst/Alt olabilir; bir maçtan tek seçim alınır. Seçimler, modelle piyasanın ortalaması olan birleşik tahmine göre sıralanır. Kuponlar ve sonuçları önceki yayından devralınarak `couponHistory` içinde tutulur ve sayfada "Kupon karnesi" olarak görünür.
 
 Kurulum: the-odds-api.com adresinden ücretsiz anahtar alın (ayda 500 kredi) ve GitHub'a `ODDS_API_KEY` adıyla ekleyin. Günde yaklaşık 7-9 kredi harcanır. Kuponu hemen yeniden hazırlamak için Actions sekmesinde "Web uygulamasını yayınla" işini "Oranları şimdi yeniden çek" seçeneğiyle çalıştırın.
 

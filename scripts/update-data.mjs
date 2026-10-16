@@ -63,6 +63,8 @@ const ALIASES = {
   "Amed Sportif Faaliyetler": "Amedspor",
   "Amedspor": "Amedspor",
   "Amed": "Amedspor",
+  "Amed SK": "Amedspor",
+  "Amed Sportif": "Amedspor",
   "BB Erzurumspor": "Erzurumspor",
   "Erzurum BB": "Erzurumspor",
   "Erzurumspor FK": "Erzurumspor",
@@ -343,13 +345,13 @@ async function oddsApi(path) {
 
 const median = a => { const b = [...a].sort((x, y) => x - y); const m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
 
-/** Önümüzdeki 48 saatteki maçların ortalama (medyan) 1-X-2 oranları: "ISO|Ev|Dep|1|X|2|bahisçi sayısı" */
+/** Önümüzdeki 48 saatteki maçların ortalama (medyan) oranları: "ISO|Ev|Dep|1|X|2|bahisçi sayısı|2,5 Üst|2,5 Alt" */
 async function fetchOdds(known, allKnown, status) {
   const out = {};
   const to = new Date(Date.now() + 48 * 3600e3).toISOString().replace(/\.\d{3}Z$/, "Z");
   for (const [lg, key] of Object.entries(ODDS_SPORTS)) {
     try {
-      const j = await oddsApi(`sports/${key}/odds?regions=eu&markets=h2h&oddsFormat=decimal&dateFormat=iso&commenceTimeTo=${to}`);
+      const j = await oddsApi(`sports/${key}/odds?regions=eu&markets=h2h,totals&oddsFormat=decimal&dateFormat=iso&commenceTimeTo=${to}`);
       const teams = new Map();
       j.forEach(e => { teams.set(e.home_team, { id: e.home_team, name: e.home_team }); teams.set(e.away_team, { id: e.away_team, name: e.away_team }); });
       const kn = lg === "Şampiyonlar Ligi" ? allKnown : known[lg] || [];
@@ -357,12 +359,19 @@ async function fetchOdds(known, allKnown, status) {
       const unk = [...names.values()].filter(n => !kn.includes(n));
       if (unk.length) status.unmatched.push(...unk.map(n => `${lg} (oran): ${n}`));
       out[lg] = j.map(e => {
-        const o = { h: [], x: [], a: [] };
-        for (const b of e.bookmakers || []) for (const m of b.markets || []) if (m.key === "h2h") for (const x of m.outcomes || []) {
-          if (x.name === e.home_team) o.h.push(x.price); else if (x.name === e.away_team) o.a.push(x.price); else o.x.push(x.price);
+        const o = { h: [], x: [], a: [], ov: [], un: [] };
+        for (const b of e.bookmakers || []) for (const m of b.markets || []) {
+          if (m.key === "h2h") for (const x of m.outcomes || []) {
+            if (x.name === e.home_team) o.h.push(x.price); else if (x.name === e.away_team) o.a.push(x.price); else o.x.push(x.price);
+          }
+          if (m.key === "totals") for (const x of m.outcomes || []) {
+            if (x.point !== 2.5) continue;
+            if (/^over$/i.test(x.name)) o.ov.push(x.price); else if (/^under$/i.test(x.name)) o.un.push(x.price);
+          }
         }
         if (!o.h.length || !o.a.length || !o.x.length) return null;
-        return `${e.commence_time}|${names.get(e.home_team)}|${names.get(e.away_team)}|${median(o.h).toFixed(2)}|${median(o.x).toFixed(2)}|${median(o.a).toFixed(2)}|${o.h.length}`;
+        const ou = o.ov.length && o.un.length ? `|${median(o.ov).toFixed(2)}|${median(o.un).toFixed(2)}` : "||";
+        return `${e.commence_time}|${names.get(e.home_team)}|${names.get(e.away_team)}|${median(o.h).toFixed(2)}|${median(o.x).toFixed(2)}|${median(o.a).toFixed(2)}|${o.h.length}${ou}`;
       }).filter(Boolean).join("\n");
       console.log(`✓ Oranlar ${lg}: ${out[lg] ? out[lg].split("\n").length : 0} maç`);
     } catch (e) { console.warn(`✗ Oranlar ${lg}: ${e.message}`); }
@@ -410,7 +419,8 @@ async function settleCoupons(history, leagues, known) {
       if (r) {
         const hg = +r[3], ag = +r[4];
         it.score = `${hg}-${ag}`;
-        it.res = (it.side === "1" ? hg > ag : ag > hg) ? "W" : "L";
+        const ok = it.mk === "OU" ? (it.side === "O" ? hg + ag > 2.5 : hg + ag < 2.5) : (it.side === "1" ? hg > ag : ag > hg);
+        it.res = ok ? "W" : "L";
       } else if (Date.parse(it.iso) < Date.now() - 4 * 864e5) it.res = "V"; // 4 gün içinde sonuç yoksa ertelenmiş say
     }
     const rs = c.items.map(i => i.res);

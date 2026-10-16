@@ -51,7 +51,7 @@ if (coupon) {
   data.couponHistory = hist.slice(0, 60);
   console.log(`✓ Kupon (${coupon.date}): ${coupon.items.length} seçim, toplam oran ${coupon.totalOdds ?? "-"}`);
   if (process.env.GITHUB_ACTIONS) {
-    const txt = coupon.items.map(i => `${i.h}-${i.a}: ${i.side === "1" ? i.h : i.a} @${i.odds} (%${Math.round(i.p * 100)})`).join(" | ");
+    const txt = coupon.items.map(i => `${i.h}-${i.a}: ${i.mk === "OU" ? (i.side === "O" ? "2,5 Üst" : "2,5 Alt") : i.side === "1" ? i.h : i.a} @${i.odds} (%${Math.round(i.p * 100)})`).join(" | ");
     console.log(`::notice title=Günün kuponu (${coupon.items.length})::${txt || "Kriterlere uyan maç yok"}`);
   }
 }

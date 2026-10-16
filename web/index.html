@@ -708,8 +708,9 @@ const I18N = {
     cpEmpty:"Önümüzdeki 36 saatteki {m} maçın hiçbiri kriterlere uymadı. Zayıf maçlarla doldurmadık.",
     cpFew:"Önümüzdeki 36 saatteki {m} maçtan yalnızca {n} tanesi kriterlere uydu. Kuponu zayıf maçlarla 6'ya tamamlamadık.",
     cpNums:"Model {p} · bahisçi {q} · birleşik tahmin {c}", cpTotal:"Toplam oran", cpAll:"Hepsinin tutma ihtimali",
+    cpOver:"Maçta 3 ya da daha fazla gol", cpUnder:"Maçta en fazla 2 gol", under25:"2,5 alt",
     cpResW:"Tuttu", cpResL:"Tutmadı", cpResV:"Ertelendi", cpResP:"Bekliyor", cpWon:"Kupon kazandı", cpLost:"Kupon kaybetti",
-    cpWarn:"Kriter: oran en az {o}, model olasılığı en az {p}. Seçimler, modelle bahis piyasasının ortalaması olan birleşik tahmine göre sıralanır; model piyasadan çok farklı düşündüğünde genellikle piyasa haklı çıkar, bu yüzden ikisinin ortalaması daha gerçekçidir. Oranlar bahis şirketlerinin ortalamasıdır; oynayacağınız sitedeki oran farklı olabilir. Seçimlerin hepsinin birden tutma ihtimali düşüktür. Bu bir istatistik tahminidir, kazanç garantisi ya da bahis tavsiyesi değildir.",
+    cpWarn:"Kriter: oran en az {o}, model olasılığı en az {p} (orta ve yüksek güven); seçimler takım galibiyeti ya da 2,5 üst/alt olabilir, bir maçtan tek seçim alınır. Seçimler, modelle bahis piyasasının ortalaması olan birleşik tahmine göre sıralanır; model piyasadan çok farklı düşündüğünde genellikle piyasa haklı çıkar, bu yüzden ikisinin ortalaması daha gerçekçidir. Oranlar bahis şirketlerinin ortalamasıdır; oynayacağınız sitedeki oran farklı olabilir. Seçimlerin hepsinin birden tutma ihtimali düşüktür. Bu bir istatistik tahminidir, kazanç garantisi ya da bahis tavsiyesi değildir.",
     cpHist:"Kupon karnesi", cpHistSum:"Sonuçlanan {c} kuponun {w} tanesi kazandı. Tek tek seçimlerde {n} maçın {h} tanesi tuttu ({p}).", cpPicks:"seçim",
     cpSt_won:"kazandı", cpSt_lost:"kaybetti", cpSt_pending:"bekliyor", cpSt_empty:"seçim yok", cpSt_void:"ertelendi",
     karneTitle:"Model karnesi", karneHit:"bu sezon {l} maçlarında en olası sonucun tutma oranı: {n} maçtan {h} tanesinde doğru çıktı.", karneHi:"Yüksek güvenli tahminler: {n} maçtan {h} tanesi doğru ({p}).",
@@ -768,8 +769,9 @@ const I18N = {
     cpEmpty:"None of the {m} matches in the next 36 hours met the criteria. We didn't fill the coupon with weaker picks.",
     cpFew:"Only {n} of the {m} matches in the next 36 hours met the criteria. We didn't pad the coupon to 6 with weaker picks.",
     cpNums:"Model {p} · bookmaker {q} · combined {c}", cpTotal:"Total odds", cpAll:"Chance all win",
+    cpOver:"3 or more goals in the match", cpUnder:"2 goals or fewer in the match", under25:"Under 2.5",
     cpResW:"Won", cpResL:"Lost", cpResV:"Postponed", cpResP:"Pending", cpWon:"Coupon won", cpLost:"Coupon lost",
-    cpWarn:"Criteria: odds of at least {o} and model probability of at least {p}. Picks are ranked by the combined estimate, the average of the model and the betting market; when the model disagrees strongly with the market, the market is usually right, so the average is more realistic. Odds are the bookmakers' average; the odds on the site you use may differ. The chance of all picks winning together is low. This is a statistical estimate, not a guarantee of winnings or betting advice.",
+    cpWarn:"Criteria: odds of at least {o} and model probability of at least {p} (medium and high confidence); picks can be a team win or over/under 2.5 goals, with one pick per match. Picks are ranked by the combined estimate, the average of the model and the betting market; when the model disagrees strongly with the market, the market is usually right, so the average is more realistic. Odds are the bookmakers' average; the odds on the site you use may differ. The chance of all picks winning together is low. This is a statistical estimate, not a guarantee of winnings or betting advice.",
     cpHist:"Coupon record", cpHistSum:"{w} of {c} settled coupons won. Individually, {h} of {n} picks came in ({p}).", cpPicks:"picks",
     cpSt_won:"won", cpSt_lost:"lost", cpSt_pending:"pending", cpSt_empty:"no picks", cpSt_void:"void",
     karneTitle:"Model report card", karneHit:"of {l} matches this season had the most likely result predicted correctly ({h} of {n}).", karneHi:"High-confidence predictions: correct in {h} of {n} matches ({p}).",
@@ -1297,7 +1299,7 @@ function applyData(j){
   });
   if(Array.isArray(j.absences)) ABSENCES=j.absences;
   Object.entries(j.odds?.leagues||{}).forEach(([lg,txt])=>{
-    ODDS[lg]=(txt||"").split("\n").filter(Boolean).map(r=>{ const [iso,h,a,o1,ox,o2,n]=r.split("|"); return {iso,h,a,o1:+o1,ox:+ox,o2:+o2,n:+n}; });
+    ODDS[lg]=(txt||"").split("\n").filter(Boolean).map(r=>{ const [iso,h,a,o1,ox,o2,n,ov,un]=r.split("|"); return {iso,h,a,o1:+o1,ox:+ox,o2:+o2,n:+n,ov:+ov||null,un:+un||null}; });
     // Fikstürde olmayan maçları (ör. Süper Lig) oran listesinden ekle
     const have=new Set((FIXTURES[lg]||"").split("\n").filter(Boolean).map(r=>{ const [,h,a]=r.split("|"); return h+"|"+a; }));
     const add=ODDS[lg].filter(e=>!have.has(e.h+"|"+e.a)).map(e=>`${e.iso}|${e.h}|${e.a}`);
@@ -1320,7 +1322,8 @@ function applyData(j){
 // Oranlar ve kupon geçmişi data.json'dan gelir. Kupon her sabah GitHub'daki işte bu fonksiyonla hazırlanıp sabitlenir.
 const ODDS = {};            // lig → [{iso,h,a,o1,ox,o2,n}]
 let COUPONS = [];           // en yenisi başta
-const CP_MIN_ODDS = 1.80, CP_MIN_P = 0.55, CP_SIZE = 6, CP_WINDOW_H = 36;
+// Orta (%45-55) ve yüksek (%55+) güvenli seçimler; 1-2 ve 2,5 Üst/Alt
+const CP_MIN_ODDS = 1.80, CP_MIN_P = 0.45, CP_HI_P = 0.55, CP_SIZE = 6, CP_WINDOW_H = 36;
 function buildCoupon(nowMs){
   const now = nowMs ?? Date.now(), until = now + CP_WINDOW_H*3600e3;
   const cands = []; let nMatches = 0;
@@ -1331,19 +1334,28 @@ function buildCoupon(nowMs){
     const k=Date.parse(e.iso); if(!(k>now && k<=until) || used.has(e.h+"|"+e.a)) return;
     nMatches++;
     const m=matchModel(lg,e.h,e.a,e.iso,false);
-    const inv=1/e.o1+1/e.ox+1/e.o2;
-    [["1",m.p1,e.o1],["2",m.p2,e.o2]].forEach(([side,p,o])=>{
+    const inv=1/e.o1+1/e.ox+1/e.o2, invOU = e.ov&&e.un ? 1/e.ov+1/e.un : null;
+    const opts=[["1X2","1",m.p1,e.o1,inv],["1X2","2",m.p2,e.o2,inv]];
+    if(invOU) opts.push(["OU","O",m.o25,e.ov,invOU],["OU","U",1-m.o25,e.un,invOU]);
+    opts.forEach(([mk,side,p,o,iv])=>{
       // Model ile bahis piyasasının ortalaması daha gerçekçi bir güven ölçüsüdür; sıralama buna göre
-      const imp=(1/o)/inv;
-      if(o>=CP_MIN_ODDS && p>=CP_MIN_P) cands.push({lg,iso:e.iso,h:e.h,a:e.a,side,odds:o,p:+p.toFixed(4),imp:+imp.toFixed(4),pc:+((p+imp)/2).toFixed(4)});
+      const imp=(1/o)/iv;
+      if(o>=CP_MIN_ODDS && p>=CP_MIN_P) cands.push({lg,iso:e.iso,h:e.h,a:e.a,mk,side,odds:o,p:+p.toFixed(4),imp:+imp.toFixed(4),pc:+((p+imp)/2).toFixed(4)});
     });
   }));
   cands.sort((x,y)=>y.pc-x.pc || y.p-x.p);
-  const items = cands.slice(0,CP_SIZE).sort((x,y)=>Date.parse(x.iso)-Date.parse(y.iso));
+  // Bir maçtan yalnızca bir seçim
+  const seen=new Set(), items=[];
+  for(const c of cands){ const k=c.h+"|"+c.a; if(seen.has(k)) continue; seen.add(k); items.push(c); if(items.length===CP_SIZE) break; }
+  items.sort((x,y)=>Date.parse(x.iso)-Date.parse(y.iso));
   const prod = f => items.reduce((s,i)=>s*f(i),1);
   return { date: istDay.format(new Date(now)), built: new Date(now).toISOString(), items,
     totalOdds: items.length ? +prod(i=>i.odds).toFixed(2) : null, pAll: items.length ? +prod(i=>i.pc).toFixed(4) : null,
     nMatches, nCands: cands.length, status: items.length ? "pending" : "empty" };
+}
+function selTxt(i){
+  if(i.mk==="OU") return `${t_(i.side==="O"?"cpOver":"cpUnder")} <span class="muted">(${t_(i.side==="O"?"over25":"under25")})</span>`;
+  return `${esc(t_("wins",{t:T(i.side==="1"?i.h:i.a)}))} <span class="muted">(${i.side})</span>`;
 }
 function renderCoupon(){
   const box=$("couponSec"); const c=COUPONS[0];
@@ -1356,7 +1368,7 @@ function renderCoupon(){
   const rows = c.items.map(i=>`<div class="cp-row">
       <div class="m">${esc(L(i.lg))} · ${tm(i.iso)} · ${esc(T(i.h))} – ${esc(T(i.a))}</div>
       <div class="odd">${dec(i.odds,2)}</div>
-      <div class="sel">${esc(t_("wins",{t:T(i.side==="1"?i.h:i.a)}))} <span class="muted">(${i.side})</span>${st(i)}</div>
+      <div class="sel">${selTxt(i)}${st(i)} <span class="conf ${i.p>=CP_HI_P?"hi":"mid"}" style="margin-left:4px">${t_(i.p>=CP_HI_P?"conf_hi":"conf_mid")}</span></div>
       <div class="nums">${t_("cpNums",{p:pct(i.p),q:pct(i.imp),c:pct(i.pc??(i.p+i.imp)/2)})}</div>
     </div>`).join("");
   const few = c.items.length && c.items.length<CP_SIZE ? `<p class="cp-warn">${t_("cpFew",{n:c.items.length,m:c.nMatches})}</p>` : "";
