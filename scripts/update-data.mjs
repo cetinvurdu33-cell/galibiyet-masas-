@@ -10,7 +10,7 @@
 //   halves:   "Takım|1Y atılan|1Y yenen|2Y atılan|2Y yenen"
 //   fixtures: "ISO tarih|Ev|Deplasman"
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -379,6 +379,73 @@ async function fetchOdds(known, allKnown, status) {
   return { fetched: new Date().toISOString(), remaining: Number.isFinite(oddsRemaining) ? oddsRemaining : null, leagues: out };
 }
 
+// ---------- Aralarındaki maçlar (son 10 yıl, football-data.co.uk) ----------
+const FDCO = { "Premier League": "E0", "La Liga": "SP1", "Serie A": "I1", "Bundesliga": "D1", "Ligue 1": "F1", "Süper Lig": "T1" };
+const H2H_YEARS = 10;
+const CACHE_DIR = join(ROOT, ".cache", "fdco");
+
+/** Bir sezonun CSV dosyası (bitmiş sezonlar önbellekten; içinde bulunulan sezon her seferinde yeniden) */
+async function fdcoSeason(div, code, current) {
+  const f = join(CACHE_DIR, `${code}-${div}.csv`);
+  if (!current && existsSync(f)) return readFileSync(f, "utf8");
+  if (process.env.FD_MOCK_DIR) { const m = join(process.env.FD_MOCK_DIR, `FDCO-${code}-${div}.csv`); return existsSync(m) ? readFileSync(m, "utf8") : null; }
+  const res = await fetch(`https://www.football-data.co.uk/mmz4281/${code}/${div}.csv`);
+  if (!res.ok) return null;
+  const txt = await res.text();
+  if (!/HomeTeam/.test(txt.slice(0, 500))) return null;
+  mkdirSync(CACHE_DIR, { recursive: true }); writeFileSync(f, txt);
+  return txt;
+}
+function parseCsv(txt) {
+  const lines = txt.replace(/^\uFEFF/, "").split(/\r?\n/).filter(Boolean);
+  const head = lines[0].split(","), ix = k => head.indexOf(k);
+  const iD = ix("Date"), iH = ix("HomeTeam"), iA = ix("AwayTeam"), iHG = ix("FTHG"), iAG = ix("FTAG");
+  return lines.slice(1).map(l => l.split(",")).filter(c => c[iH] && c[iHG] !== "" && c[iHG] != null).map(c => {
+    const [d, m, y] = c[iD].split("/"); const yy = y.length === 2 ? "20" + y : y;
+    return { d: `${yy}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`, h: c[iH], a: c[iA], hg: +c[iHG], ag: +c[iAG] };
+  });
+}
+/** Yaklaşan maçlar için iki takımın son 10 yıldaki karşılaşmaları: "Ev|Dep" → "YYYY-AA-GG|Ev|Dep|EvGol|DepGol;..." */
+async function buildH2H(leagues, odds, known, status) {
+  const now = new Date(), y = now.getUTCFullYear(), startY = now.getUTCMonth() >= 6 ? y : y - 1; // sezon başlangıç yılı
+  const out = {}, missing = [];
+  // ligdeki her takım çifti için yaklaşan maçları topla
+  const pairs = {};
+  for (const lg of Object.keys(FDCO)) {
+    const fx = [...(leagues[lg]?.fixtures || "").split("\n"), ...(odds?.leagues?.[lg] || "").split("\n")].filter(Boolean).map(r => r.split("|"));
+    pairs[lg] = new Set(fx.map(([, h, a]) => h + "|" + a));
+  }
+  // Şampiyonlar Ligi: iki takım aynı yerel ligdeyse o ligin maçlarına bakılır
+  const cl = [...(leagues["Şampiyonlar Ligi"]?.fixtures || "").split("\n"), ...(odds?.leagues?.["Şampiyonlar Ligi"] || "").split("\n")].filter(Boolean).map(r => r.split("|"));
+  for (const [, h, a] of cl) for (const lg of Object.keys(FDCO)) if ((known[lg] || []).includes(h) && (known[lg] || []).includes(a)) pairs[lg].add(h + "|" + a);
+  for (const [lg, div] of Object.entries(FDCO)) {
+    if (!pairs[lg].size) continue;
+    let rows = [];
+    for (let s = startY - H2H_YEARS; s < startY; s++) {
+      const code = String(s % 100).padStart(2, "0") + String((s + 1) % 100).padStart(2, "0");
+      try {
+        const txt = await fdcoSeason(div, code, false);
+        if (txt) rows.push(...parseCsv(txt)); else missing.push(`${lg} ${s}-${String((s + 1) % 100).padStart(2, "0")}`);
+      } catch { missing.push(`${lg} ${s}`); }
+      if (!process.env.FD_MOCK_DIR) await sleep(250);
+    }
+    // bu sezonun sonuçları kendi verimizden
+    (leagues[lg]?.results || "").split("\n").filter(Boolean).forEach(r => { const [d, h, a, hg, ag] = r.split("|"); rows.push({ d: d.slice(0, 10), h, a, hg: +hg, ag: +ag, mapped: true }); });
+    const teams = new Map(); rows.filter(r => !r.mapped).forEach(r => { teams.set(r.h, { id: r.h, name: r.h }); teams.set(r.a, { id: r.a, name: r.a }); });
+    const names = buildNameMap([...teams.values()], known[lg] || []);
+    rows = rows.map(r => r.mapped ? r : { ...r, h: names.get(r.h), a: names.get(r.a) });
+    for (const key of pairs[lg]) {
+      const [h, a] = key.split("|");
+      const games = rows.filter(r => (r.h === h && r.a === a) || (r.h === a && r.a === h))
+        .sort((x, y) => y.d.localeCompare(x.d)).slice(0, 20);
+      out[key] = games.map(r => `${r.d}|${r.h}|${r.a}|${r.hg}|${r.ag}`).join(";");
+    }
+  }
+  if (missing.length) status.h2hMissing = missing;
+  console.log(`✓ Aralarındaki maçlar: ${Object.keys(out).length} eşleşme${missing.length ? `, alınamayan sezon: ${missing.length}` : ""}`);
+  return { built: now.toISOString(), pairs: out };
+}
+
 /** Önceki yayındaki data.json (oranlar ve kupon geçmişi buradan devralınır) */
 async function getPrev() {
   try {
@@ -504,11 +571,41 @@ async function main() {
       needCoupon = true;
     }
   }
+  // Süper Lig sonuçları (football-data'da yok): The Odds API skorlarından günde bir kez biriktirilir
+  const extraResults = { ...(prev?.extraResults || {}) };
+  if ((process.env.ODDS_API_KEY || process.env.FD_MOCK_DIR && process.env.ODDS_MOCK) && !leagues["Süper Lig"]?.table) {
+    const last = prev?.extraResultsFetched;
+    if (needCoupon || !last || istDate(new Date(last)) !== istDate(now)) {
+      try {
+        const lg = "Süper Lig";
+        const j = await oddsApi(`sports/${ODDS_SPORTS[lg]}/scores?daysFrom=3&dateFormat=iso`);
+        const teams = new Map(); j.forEach(e => { teams.set(e.home_team, { id: e.home_team, name: e.home_team }); teams.set(e.away_team, { id: e.away_team, name: e.away_team }); });
+        const names = buildNameMap([...teams.values()], known[lg] || []);
+        const have = new Set((extraResults[lg] || "").split("\n").filter(Boolean).map(r => r.split("|").slice(1, 3).join("|")));
+        const add = j.filter(e => e.completed && e.scores).map(e => {
+          const sc = Object.fromEntries(e.scores.map(x => [x.name, x.score]));
+          return `${e.commence_time}|${names.get(e.home_team)}|${names.get(e.away_team)}|${sc[e.home_team]}|${sc[e.away_team]}`;
+        }).filter(r => !have.has(r.split("|").slice(1, 3).join("|")));
+        extraResults[lg] = [...(extraResults[lg] || "").split("\n").filter(Boolean), ...add].sort().join("\n");
+        console.log(`✓ Süper Lig skorları: ${add.length} yeni sonuç`);
+      } catch (e) { console.warn("✗ Süper Lig skorları: " + e.message); }
+    }
+  }
+  const extraResultsFetched = Object.keys(extraResults).length ? (needCoupon || !prev?.extraResultsFetched || istDate(new Date(prev.extraResultsFetched)) !== istDate(now) ? now.toISOString() : prev.extraResultsFetched) : null;
   const couponHistory = (prev?.couponHistory || []).slice(0, 60);
-  try { await settleCoupons(couponHistory, leagues, known); } catch (e) { console.warn("✗ Kupon sonuçları: " + e.message); }
+  try { await settleCoupons(couponHistory, { ...Object.fromEntries(Object.entries(extraResults).map(([k, v]) => [k, { results: v }])), ...leagues }, known); } catch (e) { console.warn("✗ Kupon sonuçları: " + e.message); }
   if (odds?.remaining != null) status.oddsRemaining = oddsRemaining !== Infinity ? oddsRemaining : odds.remaining;
 
-  const out = { updated: new Date().toISOString(), source: "football-data.org", leagues, absences, status, odds, couponHistory, needCoupon };
+  // Aralarındaki maçlar günde bir kez (ya da yeni fikstür gelince) hesaplanır
+  let h2h = prev?.h2h || null;
+  const fxKeys = Object.values(leagues).flatMap(v => (v.fixtures || "").split("\n").filter(Boolean).map(r => r.split("|").slice(1, 3).join("|")));
+  const missingPairs = fxKeys.some(k => !(h2h?.pairs && k in h2h.pairs));
+  if (!h2h || istDate(new Date(h2h.built)) !== istDate(now) || missingPairs || needCoupon) {
+    try { h2h = await buildH2H({ ...leagues, ...Object.fromEntries(Object.entries(extraResults).map(([k, v]) => [k, { ...(leagues[k] || {}), results: leagues[k]?.results || v }])) }, odds, known, status); }
+    catch (e) { console.warn("✗ Aralarındaki maçlar: " + e.message); }
+  }
+
+  const out = { updated: new Date().toISOString(), source: "football-data.org", leagues, absences, status, odds, couponHistory, extraResults, extraResultsFetched, h2h, needCoupon };
   writeFileSync(OUT, JSON.stringify(out));
   // GitHub Actions özetinde görünsün diye (kontrol için)
   if (process.env.GITHUB_ACTIONS) {
@@ -516,6 +613,7 @@ async function main() {
     const absTxt = Object.entries(status.absences).map(([k, v]) => `${k}: ${v.source ? v.source + " " + v.count : "hata"}${v.error ? " (" + v.error.slice(0, 80) + ")" : ""}`).join(" | ");
     console.log(`::notice title=Ev ve deplasman golleri::${homeTxt}`);
     console.log(`::notice title=Eksik oyuncular::${absTxt}`);
+    if (h2h) console.log(`::notice title=Aralarındaki maçlar::${Object.keys(h2h.pairs).length} eşleşme, ${Object.values(h2h.pairs).filter(Boolean).length} tanesinde geçmiş maç var${status.h2hMissing ? ` · alınamayan sezonlar: ${status.h2hMissing.join(", ")}` : ""}`);
     if (odds) console.log(`::notice title=Oranlar::${istDate(new Date(odds.fetched))} · ${Object.entries(odds.leagues).map(([k, v]) => `${k} ${v ? v.split("\n").length : 0}`).join(", ")} · kalan kredi ${status.oddsRemaining ?? "?"}${needCoupon ? " · yeni kupon hazırlanacak" : ""}`);
     if (errors.length) console.log(`::warning title=Alınamayan veriler::${errors.join(" | ").slice(0, 900)}`);
     // Elle başlatılan çalışmada istenirse maç sonuçlarını da yaz (model kontrolü için)

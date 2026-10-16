@@ -26,21 +26,22 @@ const server = createServer((req, res) => {
 await new Promise(r => server.on("listening", r));
 const url = `http://127.0.0.1:${server.address().port}/index.html`;
 
-let coupon = null;
+let coupon = null, browser = null;
 try {
   // playwright, iş akışında ayrı bir klasöre (PW_DIR) kurulur
   const require = createRequire(process.env.PW_DIR ? join(process.env.PW_DIR, "index.js") : import.meta.url);
   const { chromium } = require("playwright");
-  const browser = await chromium.launch();
+  browser = await chromium.launch();
   const page = await browser.newPage();
   // Dış kaynaklar (yazı tipleri) beklenmesin
   await page.route(/^https?:\/\/(?!127\.0\.0\.1)/, r => r.abort());
   await page.goto(url);
   await page.waitForFunction(() => window.GM && window.GM.ready, null, { timeout: 30000 });
   coupon = await page.evaluate(() => window.GM.buildCoupon(Date.now()));
-  await browser.close();
 } catch (e) {
   console.error("Kupon hazırlanamadı: " + e.message);
+} finally {
+  if (browser) await browser.close().catch(() => {});
 }
 server.close();
 
@@ -56,3 +57,4 @@ if (coupon) {
   }
 }
 writeFileSync(OUT, JSON.stringify(data));
+process.exit(0);

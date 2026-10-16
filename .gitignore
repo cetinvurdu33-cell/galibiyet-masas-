@@ -43,3 +43,6 @@ local.properties
 
 # Zamanlanmış işin ürettiği veri (depoya eklenmez)
 web/data.json
+
+# İndirilen geçmiş sezon dosyaları
+.cache/

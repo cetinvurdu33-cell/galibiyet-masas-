@@ -263,6 +263,8 @@ mark{background:var(--accent-soft);color:inherit;border-radius:2px}
       <p><b>Ev sahibi avantajı.</b> Her ligde bu sezon ev sahiplerinin attığı gollerin toplam gollere oranı ölçülür. Bu oran, Avrupa liglerinde uzun yıllardır görülen yaklaşık %55'lik payla harmanlanır; böylece az maç oynanmışken tek tük sonuçlar oranı savurmaz. Oran %55 ise ev sahibinin beklenen golü %10 artar, deplasman takımınınki %10 azalır.</p>
       <p><b>Sakat ve cezalı oyuncular.</b> Maç günü forma giyemeyecek oyuncular takımın hücum gücünü, oyuncunun bu sezonki gol ve asist katkısıyla orantılı olarak düşürür. Takımın gollerinin üçte birini atan bir oyuncu eksikse hücum yaklaşık %20 azalır, çünkü yerine oynayan da bir miktar katkı verir. Her eksik oyuncu ayrıca savunmayı biraz zayıflatır; kaleci ve defans oyuncularında bu etki daha büyüktür. Şüpheli oyuncular yarım sayılır. Hücum kaybı en fazla %25, savunma kaybı en fazla %10 olabilir.</p>
       <p><b>Sonuç ve skor olasılıkları.</b> İki takımın beklenen gollerinden her skorun olasılığı Poisson dağılımıyla hesaplanır; 0-0, 1-0, 0-1 ve 1-1 gibi düşük skorlar için Dixon-Coles düzeltmesi uygulanır. 1-X-2, en olası skorlar, 2,5 üst ve karşılıklı gol olasılıkları bu tablodan çıkar. En yüksek sonuç olasılığı %55 ve üzerindeyse güven "yüksek", %45-55 arasındaysa "orta", altındaysa "düşük" sayılır. Kesinleşmiş ilk 11'ler maçtan kısa süre önce açıklandığı için modele dahil değildir.</p>
+      <p><b>Bahis oranları.</b> Oranı olan maçlarda tahmin %40 model, %60 bahis piyasasıdır (bahis şirketinin marjı ayıklanır). Piyasa sakatlık, kadro ve son dakika haberlerini bizden hızlı yansıtır; bu sezonki ölçümde modelin %50-60 dediği sonuçlar %46 tuttuğu için piyasaya daha fazla ağırlık verildi.</p>
+      <p><b>Aralarındaki maçlar.</b> İki takımın son 10 yılda aralarında oynadığı lig maçları (football-data.co.uk) da hesaba katılır. Her takımın bu rakibe karşı attığı gol, yakın tarihli maçlar daha ağır olacak şekilde lig ortalamasıyla karşılaştırılır. Az maç varsa etkisi küçük kalır ve beklenen golü en fazla %10 değiştirebilir, çünkü takımların bugünkü gücü eski karşılaşmalardan daha belirleyicidir.</p>
       <p><b>Model karnesi.</b> Modelin bu sezonki her maçı, yalnızca o maçtan önceki sonuçlar kullanılarak yeniden tahmin edilir ve gerçek sonuçla karşılaştırılır. Böylece tahminlerin gerçekte ne kadar tuttuğu görülür.</p>
       <p>Sonra bu gol beklentisi iki yarıya bölünür. Süper Lig'de 2025-26 sezonunda gollerin yaklaşık %57'si ikinci yarıda atıldı; bu oran kullanılır. Diğer liglerde varsayılan pay %55'tir. Premier League ve La Liga'da takımların bu sezonki ilk yarı/ikinci yarı gol dağılımı da hesaba katılır. Her yarının golleri Poisson dağılımıyla modellenir ve üç sonucun olasılığı hesaplanır.</p>
       <p>Geçmiş sezonlar için takım bazında yarı gol verisi güvenilir bir kaynakta bulunamadı; bu yüzden yarı payında geçmiş yalnızca lig düzeyinde yer alıyor. Bu bir eğlence amaçlı istatistik tahminidir, bahis tavsiyesi değildir.</p>
@@ -699,7 +701,8 @@ const I18N = {
     noUpcoming:"{l} için önümüzdeki günlerde maç görünmüyor. Program güncellendikçe burada çıkacak.",
     xg:"Beklenen gol", resultLbl:"Maç sonucu · beklenen skor", whichHalf:"Hangi yarı daha gollü", h1s:"1Y", h2s:"2Y",
     pick:"Tahmin:", halfPick:"Daha gollü yarı:", conf_hi:"Yüksek güven", conf_mid:"Orta güven", conf_lo:"Düşük güven",
-    likelyScore:"En olası skor", over15:"1,5 üst", over25:"2,5 üst", over35:"3,5 üst", btts:"KG var", dcLbl:"Çifte şans",
+    mktLine:"Model {a} · bahis piyasası {b} · tahmin ikisinin karışımı",
+    h2hTitle:"Son 10 yılda aralarındaki maçlar ({n})", h2hShort:"Son 10 yılda {n} maç:", h2hAvg:"Maç başı gol", h2hNone:"Son 10 yılda aralarında lig maçı yok.", likelyScore:"En olası skor", over15:"1,5 üst", over25:"2,5 üst", over35:"3,5 üst", btts:"KG var", dcLbl:"Çifte şans",
     fW:"G", fD:"B", fL:"M", deepTitle:"Derin analiz", dAtt:"Hücum gücü", dDef:"Savunma (düşük iyi)", dXg:"Beklenen gol", dForm:"Son 5 maç", dHome:"İç saha G-B-M", dAway:"Deplasman G-B-M",
     deepNote:"Hücum ve savunma gücü lig ortalamasına göredir: ×1,20 hücum, ortalama bir takımdan %20 fazla gol demektir. Savunmada ×0,80, ortalamadan %20 az gol yemek demektir.",
     cpEyebrow:"Her sabah 09:00 civarı", cpTitle:"Günün kuponu",
@@ -707,14 +710,14 @@ const I18N = {
     cpOld:"Bugünün kuponu henüz hazırlanmadı; aşağıdaki {d} tarihli kupon.",
     cpEmpty:"Önümüzdeki 36 saatteki {m} maçın hiçbiri kriterlere uymadı. Zayıf maçlarla doldurmadık.",
     cpFew:"Önümüzdeki 36 saatteki {m} maçtan yalnızca {n} tanesi kriterlere uydu. Kuponu zayıf maçlarla 6'ya tamamlamadık.",
-    cpNums:"Model {p} · bahisçi {q} · birleşik tahmin {c}", cpTotal:"Toplam oran", cpAll:"Hepsinin tutma ihtimali",
+    cpNums:"Model {p} · bahis piyasası {q} · birleşik tahmin {c}", cpTotal:"Toplam oran", cpAll:"Hepsinin tutma ihtimali",
     cpOver:"Maçta 3 ya da daha fazla gol", cpUnder:"Maçta en fazla 2 gol", under25:"2,5 alt",
     cpResW:"Tuttu", cpResL:"Tutmadı", cpResV:"Ertelendi", cpResP:"Bekliyor", cpWon:"Kupon kazandı", cpLost:"Kupon kaybetti",
-    cpWarn:"Kriter: oran en az {o}, model olasılığı en az {p} (orta ve yüksek güven); seçimler takım galibiyeti ya da 2,5 üst/alt olabilir, bir maçtan tek seçim alınır. Seçimler, modelle bahis piyasasının ortalaması olan birleşik tahmine göre sıralanır; model piyasadan çok farklı düşündüğünde genellikle piyasa haklı çıkar, bu yüzden ikisinin ortalaması daha gerçekçidir. Oranlar bahis şirketlerinin ortalamasıdır; oynayacağınız sitedeki oran farklı olabilir. Seçimlerin hepsinin birden tutma ihtimali düşüktür. Bu bir istatistik tahminidir, kazanç garantisi ya da bahis tavsiyesi değildir.",
+    cpWarn:"Kriter: oran en az {o}, model en az piyasa kadar iyimser ve birleşik tahmin en az {p}. Birleşik tahmin %40 model, %60 bahis piyasasıdır; piyasa sakatlık ve kadro haberlerini bizden iyi yansıttığı için ağırlığı daha fazladır. Seçimler takım galibiyeti ya da 2,5 üst/alt olabilir, bir maçtan tek seçim alınır. Oranlar bahis şirketlerinin ortalamasıdır; oynayacağınız sitedeki oran farklı olabilir. Seçimlerin hepsinin birden tutma ihtimali düşüktür. Bu bir istatistik tahminidir, kazanç garantisi ya da bahis tavsiyesi değildir.",
     cpHist:"Kupon karnesi", cpHistSum:"Sonuçlanan {c} kuponun {w} tanesi kazandı. Tek tek seçimlerde {n} maçın {h} tanesi tuttu ({p}).", cpPicks:"seçim",
     cpSt_won:"kazandı", cpSt_lost:"kaybetti", cpSt_pending:"bekliyor", cpSt_empty:"seçim yok", cpSt_void:"ertelendi",
     karneTitle:"Model karnesi", karneHit:"bu sezon {l} maçlarında en olası sonucun tutma oranı: {n} maçtan {h} tanesinde doğru çıktı.", karneHi:"Yüksek güvenli tahminler: {n} maçtan {h} tanesi doğru ({p}).",
-    karneNote:"Her maç, yalnızca o maçtan önceki sonuçlarla tahmin edilip gerçek sonuçla karşılaştırıldı. Üç sonuçtan birini rastgele seçmek %33 tutar. Sakat oyuncular bu ölçüme dahil değildir.",
+    karneNote:"Her maç, yalnızca o maçtan önceki sonuçlarla ve bahis oranları kullanılmadan tahmin edilip gerçek sonuçla karşılaştırıldı. Üç sonuçtan birini rastgele seçmek %33 tutar. Sakat oyuncular bu ölçüme dahil değildir.",
     half1:"1. yarı", half2:"2. yarı", level:"Eşitlik öne çıkıyor", goals:"gol",
     ariaResult:"{h} kazanır {p1}, beraberlik {px}, {a} kazanır {p2}", ariaHalves:"1. yarı daha gollü {a}, eşit {b}, 2. yarı daha gollü {c}",
     noteAuto:"{l} verileri {w} tarihinde otomatik güncellendi (maçlar ve goller: football-data.org{sl}).", noteSL:", Süper Lig: API-Football",
@@ -742,6 +745,8 @@ const I18N = {
       <p><b>Home advantage.</b> In each league, the share of goals scored by home teams this season is measured. It is blended with the roughly 55% share seen in European leagues over many years, so a handful of early results can't swing it. At 55%, the home team's expected goals rise by 10% and the away team's fall by 10%.</p>
       <p><b>Injured and suspended players.</b> Players who will miss the match lower their team's attack in proportion to their goals and assists this season. If a player who scored a third of the team's goals is out, the attack drops by about 20%, because whoever replaces him also contributes something. Each missing player also weakens the defence a little, more so for goalkeepers and defenders. Doubtful players count as half. The attack can lose at most 25% and the defence at most 10%.</p>
       <p><b>Result and score probabilities.</b> The probability of every scoreline is calculated from the two teams' expected goals with a Poisson distribution, with the Dixon-Coles correction for low scores such as 0-0, 1-0, 0-1 and 1-1. The 1-X-2, most likely scores, over 2.5 and both-teams-score probabilities all come from this table. If the highest result probability is 55% or more, confidence is "high"; 45-55% is "medium"; below that is "low". Confirmed line-ups are announced shortly before kick-off, so they are not part of the model.</p>
+      <p><b>Betting odds.</b> For matches with odds, the prediction is 40% model and 60% betting market (with the bookmaker's margin removed). The market reflects injury, squad and late news faster than we do; this season, results the model rated at 50-60% came in only 46% of the time, so the market gets more weight.</p>
+      <p><b>Head-to-head.</b> League meetings between the two teams over the last 10 years (football-data.co.uk) are also taken into account. Each team's goals against this opponent are compared with the league average, with recent meetings weighted more. With few meetings the effect stays small, and it can change expected goals by at most 10%, because the teams' current strength matters more than old meetings.</p>
       <p><b>Model report card.</b> Every match this season is re-predicted using only the results before it and compared with the actual result, so you can see how often the predictions really come true.</p>
       <p>The expected goals are then split between the two halves. In the Süper Lig, about 57% of goals in 2025-26 were scored in the second half, and that share is used. Other leagues use a default of 55%. In the Premier League and La Liga, each team's first-half/second-half goal split this season is also taken into account. Goals in each half are modelled with a Poisson distribution, and the probability of each of the three outcomes is calculated.</p>
       <p>No reliable source was found for team-level half-by-half goals in past seasons, so history only enters the half split at league level. This is a statistical estimate for entertainment, not betting advice.</p>`,
@@ -760,7 +765,8 @@ const I18N = {
     noUpcoming:"No matches for {l} in the coming days. They will appear here as the fixture list updates.",
     xg:"Expected goals", resultLbl:"Result · expected score", whichHalf:"Which half has more goals", h1s:"1H", h2s:"2H",
     pick:"Prediction:", halfPick:"Half with more goals:", conf_hi:"High confidence", conf_mid:"Medium confidence", conf_lo:"Low confidence",
-    likelyScore:"Most likely score", over15:"Over 1.5", over25:"Over 2.5", over35:"Over 3.5", btts:"Both score", dcLbl:"Double chance",
+    mktLine:"Model {a} · betting market {b} · prediction blends both",
+    h2hTitle:"Meetings in the last 10 years ({n})", h2hShort:"Last 10 years, {n} meetings:", h2hAvg:"Goals per match", h2hNone:"No league meetings between them in the last 10 years.", likelyScore:"Most likely score", over15:"Over 1.5", over25:"Over 2.5", over35:"Over 3.5", btts:"Both score", dcLbl:"Double chance",
     fW:"W", fD:"D", fL:"L", deepTitle:"Deep analysis", dAtt:"Attack rating", dDef:"Defence (lower is better)", dXg:"Expected goals", dForm:"Last 5", dHome:"Home W-D-L", dAway:"Away W-D-L",
     deepNote:"Attack and defence ratings are relative to the league average: ×1.20 attack means 20% more goals than an average team. ×0.80 defence means conceding 20% fewer goals than average.",
     cpEyebrow:"Every morning around 09:00", cpTitle:"Coupon of the day",
@@ -768,14 +774,14 @@ const I18N = {
     cpOld:"Today's coupon hasn't been built yet; this is the coupon from {d}.",
     cpEmpty:"None of the {m} matches in the next 36 hours met the criteria. We didn't fill the coupon with weaker picks.",
     cpFew:"Only {n} of the {m} matches in the next 36 hours met the criteria. We didn't pad the coupon to 6 with weaker picks.",
-    cpNums:"Model {p} · bookmaker {q} · combined {c}", cpTotal:"Total odds", cpAll:"Chance all win",
+    cpNums:"Model {p} · betting market {q} · combined {c}", cpTotal:"Total odds", cpAll:"Chance all win",
     cpOver:"3 or more goals in the match", cpUnder:"2 goals or fewer in the match", under25:"Under 2.5",
     cpResW:"Won", cpResL:"Lost", cpResV:"Postponed", cpResP:"Pending", cpWon:"Coupon won", cpLost:"Coupon lost",
-    cpWarn:"Criteria: odds of at least {o} and model probability of at least {p} (medium and high confidence); picks can be a team win or over/under 2.5 goals, with one pick per match. Picks are ranked by the combined estimate, the average of the model and the betting market; when the model disagrees strongly with the market, the market is usually right, so the average is more realistic. Odds are the bookmakers' average; the odds on the site you use may differ. The chance of all picks winning together is low. This is a statistical estimate, not a guarantee of winnings or betting advice.",
+    cpWarn:"Criteria: odds of at least {o}, the model at least as optimistic as the market, and a combined estimate of at least {p}. The combined estimate is 40% model and 60% betting market; the market gets more weight because it reflects injury and squad news better than we do. Picks can be a team win or over/under 2.5 goals, with one pick per match. Odds are the bookmakers' average; the odds on the site you use may differ. The chance of all picks winning together is low. This is a statistical estimate, not a guarantee of winnings or betting advice.",
     cpHist:"Coupon record", cpHistSum:"{w} of {c} settled coupons won. Individually, {h} of {n} picks came in ({p}).", cpPicks:"picks",
     cpSt_won:"won", cpSt_lost:"lost", cpSt_pending:"pending", cpSt_empty:"no picks", cpSt_void:"void",
     karneTitle:"Model report card", karneHit:"of {l} matches this season had the most likely result predicted correctly ({h} of {n}).", karneHi:"High-confidence predictions: correct in {h} of {n} matches ({p}).",
-    karneNote:"Each match was predicted using only the results before it, then compared with the actual result. Picking one of the three outcomes at random is right 33% of the time. Injured players are not part of this measurement.",
+    karneNote:"Each match was predicted using only the results before it, without betting odds, then compared with the actual result. Picking one of the three outcomes at random is right 33% of the time. Injured players are not part of this measurement.",
     half1:"1st half", half2:"2nd half", level:"Equal halves most likely", goals:"goals",
     ariaResult:"{h} win {p1}, draw {px}, {a} win {p2}", ariaHalves:"more goals in 1st half {a}, equal {b}, more goals in 2nd half {c}",
     noteAuto:"{l} data updated automatically on {w} (matches and goals: football-data.org{sl}).", noteSL:", Süper Lig: API-Football",
@@ -1056,9 +1062,20 @@ function impact(team,lg,iso){
 // Takım güçleri bu sezonun maçlarından tek tek hesaplanır: her golün değeri rakibin savunmasına göre,
 // her maçın ağırlığı ne kadar yakın tarihte oynandığına göre belirlenir. Son 3 sezon başlangıç değeridir.
 const RESULTS = {};               // lig → [{d,h,a,hg,ag}] (tarih sıralı)
-const HALF_LIFE_DAYS = 120;       // bu kadar gün önceki maç yarım ağırlık taşır
-const PRIOR_MATCHES = 8;          // geçmiş sezonların "kaç maçlık" etkisi
-const DC_RHO = -0.08;             // düşük skorlu maçlar için Dixon-Coles düzeltmesi
+const ODDS = {};                  // lig → [{iso,h,a,o1,ox,o2,n,ov,un}] (data.json'dan)
+let COUPONS = [];                 // günün kuponları, en yenisi başta
+// Model ayarları (bu sezonun maçlarıyla yapılan geriye dönük testte seçildi; bkz. "Model karnesi")
+const MP = {
+  half: 45,      // bu kadar gün önceki maç yarım ağırlık taşır
+  prior: 12,     // geçmiş sezonların "kaç maçlık" etkisi
+  reg: 1,        // geçmiş sezon gücünün ne kadarı korunur (1 = tamamı; geri kalanı lig ortalamasına çekilir)
+  rho: -0.08,    // düşük skorlu maçlar için Dixon-Coles düzeltmesi
+  newA: 0.75, newD: 1.05,   // lige yeni gelen takımların başlangıç hücum/savunma değeri
+  mkt: 0.6,      // bahis oranı olan maçlarda piyasanın tahmindeki payı (geri kalanı model)
+  h2hK: 12,      // aralarındaki maçların etkisi: bu kadar "ortalama maç" ile dengelenir
+  h2hCap: 0.10,  // aralarındaki maçlar beklenen golü en fazla bu oranda değiştirir
+  shrink: 0,     // sonuç olasılıklarını lig ortalamasına çekme payı (aşırı özgüveni azaltır)
+};
 const RCACHE = {};
 function histAvg(lg){
   const ts=(data[lg]||[]).filter(t=>t.hist); return ts.length ? ts.reduce((s,t)=>s+t.hist.gf,0)/ts.length : LONG_AVG/2;
@@ -1076,12 +1093,12 @@ function fitRatings(lg, cut=Infinity){
   const teams=new Set((data[lg]||[]).map(t=>t.n)); ms.forEach(m=>{teams.add(m.h);teams.add(m.a);});
   const prior={}; const isCL = lg==="Şampiyonlar Ligi";
   teams.forEach(n=>{ const t=data[lg]?.find(x=>x.n===n);
-    prior[n] = t&&t.hist ? {a:t.hist.gf/ha, d:t.hist.ga/ha} : (isCL ? {a:0.9,d:1.1} : {a:0.85,d:1.15}); });
+    prior[n] = t&&t.hist ? {a:1+MP.reg*(t.hist.gf/ha-1), d:1+MP.reg*(t.hist.ga/ha-1)} : (isCL ? {a:(1+MP.newA)/2,d:(1+MP.newD)/2} : {a:MP.newA,d:MP.newD}); });
   const att={}, def={}; teams.forEach(n=>{ att[n]=prior[n].a; def[n]=prior[n].d; });
-  const P = PRIOR_MATCHES*mu/2;
+  const P = MP.prior*mu/2;
   const muH=mu*hs, muA=mu*(1-hs);
   if(ms.length){
-    const w=ms.map(m=>Math.pow(0.5,(now-m.d)/864e5/HALF_LIFE_DAYS));
+    const w=ms.map(m=>Math.pow(0.5,(now-m.d)/864e5/MP.half));
     for(let it=0; it<20; it++){
       const na={},da={},nd={},dd={};
       teams.forEach(n=>{ na[n]=P*prior[n].a; da[n]=P; nd[n]=P*prior[n].d; dd[n]=P; });
@@ -1106,7 +1123,7 @@ function scoreGrid(lh,la){
   const N=10, g=[]; let s=0;
   for(let i=0;i<=N;i++){ g[i]=[]; for(let j=0;j<=N;j++){
     let p=pois(lh,i)*pois(la,j);
-    if(i===0&&j===0) p*=1-lh*la*DC_RHO; else if(i===0&&j===1) p*=1+lh*DC_RHO; else if(i===1&&j===0) p*=1+la*DC_RHO; else if(i===1&&j===1) p*=1-DC_RHO;
+    const R=MP.rho; if(i===0&&j===0) p*=1-lh*la*R; else if(i===0&&j===1) p*=1+lh*R; else if(i===1&&j===0) p*=1+la*R; else if(i===1&&j===1) p*=1-R;
     g[i][j]=Math.max(p,0); s+=g[i][j]; } }
   let p1=0,px=0,p2=0,o15=0,o25=0,o35=0,btts=0; const sc=[];
   for(let i=0;i<=N;i++) for(let j=0;j<=N;j++){ const p=g[i][j]/s;
@@ -1121,28 +1138,61 @@ function matchModel(lg,home,away,iso,neutral,opt={}){
   const ah=r.att[home]??1, dh=r.def[home]??1, aa=r.att[away]??1, da=r.def[away]??1;
   const ih=opt.noAbs?{list:[],att:1,def:1,attLoss:0,defLoss:0}:impact(home,lg,iso), ia=opt.noAbs?{list:[],att:1,def:1,attLoss:0,defLoss:0}:impact(away,lg,iso);
   const muH = neutral ? r.mu/2 : r.muH, muA = neutral ? r.mu/2 : r.muA;
-  const lh = muH*ah*da*ih.att*ia.def, la = muA*aa*dh*ia.att*ih.def;
+  let lh = muH*ah*da*ih.att*ia.def, la = muA*aa*dh*ia.att*ih.def;
+  // Son 10 yılda aralarındaki maçlar: her takımın bu rakibe karşı attığı gol, yakın tarihli maçlar daha ağır
+  const hh = opt.noAbs ? null : h2hOf(home,away);
+  if(hh && hh.n){ const base=r.mu/2, K=MP.h2hK, cap=MP.h2hCap;
+    const fH=((hh.wgH+K*base)/(hh.w+K))/base, fA=((hh.wgA+K*base)/(hh.w+K))/base;
+    lh*=Math.min(1+cap,Math.max(1-cap,fH)); la*=Math.min(1+cap,Math.max(1-cap,fA)); }
   const g=scoreGrid(lh,la);
+  if(MP.shrink>0){ const k=MP.shrink; g.p1=(1-k)*g.p1+k*0.44; g.px=(1-k)*g.px+k*0.26; g.p2=(1-k)*g.p2+k*0.30; }
+  // Bahis oranı varsa: piyasa sakatlık, kadro ve haber bilgisini bizden iyi yansıtır; tahmin ikisinin karışımıdır
+  const raw={p1:g.p1,px:g.px,p2:g.p2,o25:g.o25};
+  const mk = opt.noAbs || opt.noMkt ? null : marketFor(lg,home,away,iso);
+  if(mk){ const w=MP.mkt;
+    g.p1=(1-w)*g.p1+w*mk.p1; g.px=(1-w)*g.px+w*mk.px; g.p2=(1-w)*g.p2+w*mk.p2;
+    if(mk.o25!=null) g.o25=(1-w)*g.o25+w*mk.o25; }
   const best = g.p1>=g.px&&g.p1>=g.p2 ? "1" : g.p2>=g.px ? "2" : "X";
   const top = Math.max(g.p1,g.px,g.p2);
   const conf = top>=0.55?"hi":top>=0.45?"mid":"lo";
   const dc = g.p1+g.px >= g.px+g.p2 ? {k:"1X",p:g.p1+g.px} : {k:"X2",p:g.px+g.p2};
-  return {...g,lh,la,tot:lh+la,ih,ia,hs:r.hs,best,top,conf,dc,rh:{a:ah,d:dh},ra:{a:aa,d:da}};
+  return {...g,lh,la,tot:lh+la,ih,ia,hs:r.hs,best,top,conf,dc,rh:{a:ah,d:dh},ra:{a:aa,d:da},raw,mk,hh};
+}
+// ---- Aralarındaki maçlar (son 10 yıl) ----
+const H2H = {};   // "Ev|Dep" → [{d,h,a,hg,ag}]
+let H2H_LOADED = false;
+function h2hOf(home,away){
+  const list = H2H[home+"|"+away] || H2H[away+"|"+home]; if(!list) return null;
+  const now=Date.now(); let w=0,wgH=0,wgA=0; const r={W:0,D:0,L:0}; let gs=0,o25=0,btts=0;
+  list.forEach(m=>{ const gH = m.h===home?m.hg:m.ag, gA = m.h===home?m.ag:m.hg;
+    const x=Math.pow(0.5,(now-Date.parse(m.d))/864e5/(365*4)); w+=x; wgH+=x*gH; wgA+=x*gA;
+    r[gH>gA?"W":gH<gA?"L":"D"]++; gs+=gH+gA; if(gH+gA>2) o25++; if(gH>0&&gA>0) btts++; });
+  const n=list.length;
+  return {n,list,rec:r,avg:n?gs/n:0,o25:n?o25/n:0,btts:n?btts/n:0,w,wgH,wgA};
+}
+// Maçın piyasa olasılıkları (bahis marjı ayıklanmış), yoksa null
+function marketFor(lg,h,a,iso){
+  const k=Date.parse(iso), e=(ODDS[lg]||[]).find(x=>x.h===h&&x.a===a&&Math.abs(Date.parse(x.iso)-k)<12*3600e3);
+  if(!e) return null;
+  const inv=1/e.o1+1/e.ox+1/e.o2, invOU=e.ov&&e.un?1/e.ov+1/e.un:null;
+  return {p1:1/e.o1/inv, px:1/e.ox/inv, p2:1/e.o2/inv, o25: invOU?1/e.ov/invOU:null, e};
 }
 // Model karnesi: her maçı, yalnızca o maçtan önceki sonuçlarla tahmin edip gerçek sonuçla karşılaştırır
 const BTCACHE={};
 function backtest(lg){
   if(BTCACHE[lg]) return BTCACHE[lg];
   const ms=RESULTS[lg]||[]; const start=Math.max(10,Math.floor(ms.length*0.2));
-  let n=0,hit=0,hiN=0,hiHit=0,brier=0;
+  let n=0,hit=0,hiN=0,hiHit=0,brier=0,ll=0,llOU=0;
   for(let i=start;i<ms.length;i++){ const m=ms[i];
     const r=matchModel(lg,m.h,m.a,new Date(m.d).toISOString(),false,{cut:m.d,noAbs:true});
     const out = m.hg>m.ag?"1":m.hg<m.ag?"2":"X";
     n++; if(r.best===out) hit++;
     if(r.conf==="hi"){ hiN++; if(r.best===out) hiHit++; }
     brier += (r.p1-(out==="1"))**2 + (r.px-(out==="X"))**2 + (r.p2-(out==="2"))**2;
+    ll -= Math.log(Math.max(1e-6, out==="1"?r.p1:out==="X"?r.px:r.p2));
+    const tg=m.hg+m.ag; llOU -= Math.log(Math.max(1e-6, tg>2.5?r.o25:1-r.o25));
   }
-  return BTCACHE[lg]={n,hit,hiN,hiHit,brier:n?brier/n:null};
+  return BTCACHE[lg]={n,hit,hiN,hiHit,brier:n?brier/n:null,ll:n?ll/n:null,llOU:n?llOU/n:null};
 }
 // Son 5 maç ve ev/deplasman karnesi
 function formOf(lg,team){
@@ -1194,9 +1244,19 @@ function deepHTML(lg,h,a,m,f1){
       <span class="lab">${t_("dHome")}</span><span>${rec(fh.home)}</span><span>–</span>
       <span class="lab">${t_("dAway")}</span><span>–</span><span>${rec(fa.away)}</span>`:""}
     </div>
+    ${h2hHTML(h,a,m)}
     <div class="kv" style="margin-top:8px"><span>${t_("over15")} <b>${pct(m.o15)}</b></span><span>${t_("over25")} <b>${pct(m.o25)}</b></span><span>${t_("over35")} <b>${pct(m.o35)}</b></span><span>${t_("btts")} <b>${pct(m.btts)}</b></span><span>1X <b>${pct(m.p1+m.px)}</b></span><span>X2 <b>${pct(m.px+m.p2)}</b></span><span>12 <b>${pct(m.p1+m.p2)}</b></span></div>
     <p class="muted" style="margin:6px 0 0">${t_("deepNote")}</p>
   </details>`;
+}
+function h2hHTML(h,a,m){
+  const x=m.hh; if(!H2H_LOADED) return "";
+  if(!x||!x.n) return `<p class="muted" style="margin:8px 0 0">${t_("h2hNone")}</p>`;
+  const f1=v=>dec(v,1);
+  const rows=x.list.slice(0,6).map(g=>`<li>${esc(dday(g.d))} · ${esc(T(g.h))} ${g.hg}-${g.ag} ${esc(T(g.a))}</li>`).join("");
+  return `<div style="margin-top:10px"><div class="bl" style="margin:0">${t_("h2hTitle",{n:x.n})}</div>
+    <div class="kv" style="margin-top:4px"><span>${esc(T(h))} <b>${x.rec.W}${t_("fW")} ${x.rec.D}${t_("fD")} ${x.rec.L}${t_("fL")}</b></span><span>${t_("h2hAvg")} <b>${f1(x.avg)}</b></span><span>${t_("over25")} <b>${pct(x.o25)}</b></span><span>${t_("btts")} <b>${pct(x.btts)}</b></span></div>
+    <ul style="margin:4px 0 0;padding-left:18px">${rows}</ul></div>`;
 }
 function karne(){
   const box=$("karne"), q=$("fxSearch").value.trim();
@@ -1242,6 +1302,8 @@ function halves(){
       ${q?`<div class="lg">${L(lg)}</div>`:""}
       <div class="teams">${hl(T(h),q)} <small>vs</small> ${hl(T(a),q)}</div>
       <div class="pick"><span>${t_("pick")} <b>${pickTxt(m,h,a)}</b></span><span class="conf ${m.conf}">${t_("conf_"+m.conf)}</span></div>
+      ${m.mk?`<div class="kv"><span>${t_("mktLine",{a:pct(m.raw[m.best==="1"?"p1":m.best==="2"?"p2":"px"]),b:pct(m.mk[m.best==="1"?"p1":m.best==="2"?"p2":"px"])})}</span></div>`:""}
+      ${m.hh&&m.hh.n?`<div class="kv"><span>${t_("h2hShort",{n:m.hh.n})} <b>${esc(T(h))} ${m.hh.rec.W}${t_("fW")} ${m.hh.rec.D}${t_("fD")} ${m.hh.rec.L}${t_("fL")}</b></span></div>`:""}
       <div class="kv"><span>${t_("likelyScore")} <b>${m.scores[0].i}-${m.scores[0].j}</b> (${pct(m.scores[0].p)})</span><span>${t_("over25")} <b>${pct(m.o25)}</b></span><span>${t_("btts")} <b>${pct(m.btts)}</b></span>${m.conf!=="hi"?`<span>${t_("dcLbl")} <b>${m.dc.k} ${pct(m.dc.p)}</b></span>`:""}</div>
       <div class="bl">${t_("resultLbl")} ${f1(m.lh)} – ${f1(m.la)}</div>
       <div class="rbar" role="img" aria-label="${esc(t_("ariaResult",{h:T(h),a:T(a),p1:pct(m.p1),px:pct(m.px),p2:pct(m.p2)}))}">
@@ -1306,6 +1368,19 @@ function applyData(j){
     if(add.length) FIXTURES[lg]=[...(FIXTURES[lg]||"").split("\n").filter(Boolean),...add].sort().join("\n");
   });
   COUPONS = Array.isArray(j.couponHistory) ? j.couponHistory : [];
+  if(j.h2h) H2H_LOADED = true;
+  Object.entries(j.h2h?.pairs||{}).forEach(([k,v])=>{ H2H[k]=(v||"").split(";").filter(Boolean).map(r=>{ const [d,h,a,hg,ag]=r.split("|"); return {d,h,a,hg:+hg,ag:+ag}; }); });
+  // Otomatik tablosu olmayan ligler (Süper Lig): The Odds API skorlarıyla gelen yeni sonuçlar tabloya ve modele eklenir
+  Object.entries(j.extraResults||{}).forEach(([lg,txt])=>{
+    if(j.leagues?.[lg]?.table) return;
+    const rs=(txt||"").split("\n").filter(Boolean).map(r=>{ const [d,h,a,hg,ag]=r.split("|"); return {d:Date.parse(d),h,a,hg:+hg,ag:+ag}; }).sort((x,y)=>x.d-y.d);
+    RESULTS[lg]=rs;
+    const cut=Date.parse(BUILT_ON+"T21:00:00Z"), tb={};
+    (LEAGUES[lg]||"").trim().split("\n").forEach(r=>{ const f=r.split("|"); tb[f[0]]=f.slice(1).map(Number); });
+    rs.filter(m=>m.d>cut).forEach(m=>{ const H=tb[m.h], A=tb[m.a]; if(!H||!A) return;
+      const r=m.hg>m.ag?[0,2]:m.hg<m.ag?[2,0]:[1,1]; H[r[0]]++; A[r[1]]++; H[3]+=m.hg; H[4]+=m.ag; A[3]+=m.ag; A[4]+=m.hg; });
+    LEAGUES[lg]=Object.entries(tb).map(([n,v])=>[n,...v].join("|")).join("\n");
+  });
   ABS_SRC = j.status?.absences || {};
   build();
   for(const k in RCACHE) delete RCACHE[k]; for(const k in BTCACHE) delete BTCACHE[k];
@@ -1320,8 +1395,6 @@ function applyData(j){
 }
 // ---- Günün kuponu ----
 // Oranlar ve kupon geçmişi data.json'dan gelir. Kupon her sabah GitHub'daki işte bu fonksiyonla hazırlanıp sabitlenir.
-const ODDS = {};            // lig → [{iso,h,a,o1,ox,o2,n}]
-let COUPONS = [];           // en yenisi başta
 // Orta (%45-55) ve yüksek (%55+) güvenli seçimler; 1-2 ve 2,5 Üst/Alt
 const CP_MIN_ODDS = 1.80, CP_MIN_P = 0.45, CP_HI_P = 0.55, CP_SIZE = 6, CP_WINDOW_H = 36;
 function buildCoupon(nowMs){
@@ -1335,12 +1408,12 @@ function buildCoupon(nowMs){
     nMatches++;
     const m=matchModel(lg,e.h,e.a,e.iso,false);
     const inv=1/e.o1+1/e.ox+1/e.o2, invOU = e.ov&&e.un ? 1/e.ov+1/e.un : null;
-    const opts=[["1X2","1",m.p1,e.o1,inv],["1X2","2",m.p2,e.o2,inv]];
-    if(invOU) opts.push(["OU","O",m.o25,e.ov,invOU],["OU","U",1-m.o25,e.un,invOU]);
-    opts.forEach(([mk,side,p,o,iv])=>{
-      // Model ile bahis piyasasının ortalaması daha gerçekçi bir güven ölçüsüdür; sıralama buna göre
+    const opts=[["1X2","1",m.raw.p1,m.p1,e.o1,inv],["1X2","2",m.raw.p2,m.p2,e.o2,inv]];
+    if(invOU) opts.push(["OU","O",m.raw.o25,m.o25,e.ov,invOU],["OU","U",1-m.raw.o25,1-m.o25,e.un,invOU]);
+    opts.forEach(([mk,side,p,pc,o,iv])=>{
+      // Seçim kuralı: oran ≥ 1,80; model en az piyasa kadar iyimser; birleşik tahmin (model + piyasa) ≥ %45
       const imp=(1/o)/iv;
-      if(o>=CP_MIN_ODDS && p>=CP_MIN_P) cands.push({lg,iso:e.iso,h:e.h,a:e.a,mk,side,odds:o,p:+p.toFixed(4),imp:+imp.toFixed(4),pc:+((p+imp)/2).toFixed(4)});
+      if(o>=CP_MIN_ODDS && p>=imp && pc>=CP_MIN_P) cands.push({lg,iso:e.iso,h:e.h,a:e.a,mk,side,odds:o,p:+p.toFixed(4),imp:+imp.toFixed(4),pc:+pc.toFixed(4)});
     });
   }));
   cands.sort((x,y)=>y.pc-x.pc || y.p-x.p);
@@ -1368,7 +1441,7 @@ function renderCoupon(){
   const rows = c.items.map(i=>`<div class="cp-row">
       <div class="m">${esc(L(i.lg))} · ${tm(i.iso)} · ${esc(T(i.h))} – ${esc(T(i.a))}</div>
       <div class="odd">${dec(i.odds,2)}</div>
-      <div class="sel">${selTxt(i)}${st(i)} <span class="conf ${i.p>=CP_HI_P?"hi":"mid"}" style="margin-left:4px">${t_(i.p>=CP_HI_P?"conf_hi":"conf_mid")}</span></div>
+      <div class="sel">${selTxt(i)}${st(i)} <span class="conf ${(i.pc??i.p)>=CP_HI_P?"hi":"mid"}" style="margin-left:4px">${t_((i.pc??i.p)>=CP_HI_P?"conf_hi":"conf_mid")}</span></div>
       <div class="nums">${t_("cpNums",{p:pct(i.p),q:pct(i.imp),c:pct(i.pc??(i.p+i.imp)/2)})}</div>
     </div>`).join("");
   const few = c.items.length && c.items.length<CP_SIZE ? `<p class="cp-warn">${t_("cpFew",{n:c.items.length,m:c.nMatches})}</p>` : "";
@@ -1382,7 +1455,7 @@ function renderCoupon(){
       <ul>${COUPONS.slice(0,10).map(x=>`<li>${esc(dday(x.date))} · ${x.items.length} ${t_("cpPicks")} · ${x.items.filter(i=>i.res==="W").length}/${x.items.length} · ${t_("cpSt_"+x.status)}</li>`).join("")}</ul></details>` : "";
   box.innerHTML = head+old+empty+`<div class="cp-list">${rows}</div>`+few+sum+`<p class="cp-warn">${t_("cpWarn",{o:dec(CP_MIN_ODDS,2),p:pct(CP_MIN_P)})}</p>`+hist;
 }
-window.GM = { ready:false, buildCoupon };
+window.GM = { ready:false, buildCoupon, MP, backtest, reset:()=>{ for(const k in RCACHE) delete RCACHE[k]; for(const k in BTCACHE) delete BTCACHE[k]; } };
 
 function absSrc(lg){
   const v=ABS_SRC[lg]; if(!v||!v.source) return "";

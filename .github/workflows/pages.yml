@@ -40,6 +40,13 @@ jobs:
         with:
           node-version: "20"
 
+      # Geçmiş sezon dosyaları (aralarındaki maçlar için) her seferinde yeniden indirilmesin
+      - uses: actions/cache@v4
+        with:
+          path: .cache/fdco
+          key: fdco-${{ github.run_id }}
+          restore-keys: fdco-
+
       # Anahtar eklenmemişse bu adım atlanır ve sayfa içindeki verilerle yayınlanır.
       # Veri alınamazsa iş durur; önceki yayın (son güncel veriler) yerinde kalır.
       - name: Güncel verileri çek
