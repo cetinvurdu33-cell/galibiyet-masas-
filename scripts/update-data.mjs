@@ -458,7 +458,7 @@ async function getPrev() {
 
 /** Kupon maçlarının sonuçlarını işler: W (tuttu), L (tutmadı), V (ertelendi/iptal) */
 async function settleCoupons(history, leagues, known) {
-  const pending = history.flatMap(c => c.items.filter(i => !i.res));
+  const pending = history.flatMap(c => [...c.items, ...(c.alts || []).flat()].filter(i => !i.res));
   if (!pending.length) return;
   const find = (lg, it) => {
     const rows = (leagues[lg]?.results || "").split("\n").filter(Boolean).map(r => r.split("|"));
@@ -480,7 +480,7 @@ async function settleCoupons(history, leagues, known) {
     } catch (e) { console.warn(`✗ Skorlar ${lg}: ${e.message}`); }
   }
   for (const c of history) {
-    for (const it of c.items) {
+    for (const it of [...c.items, ...(c.alts || []).flat()]) {
       if (it.res) continue;
       const r = find(it.lg, it) || (extra[it.lg] || []).find(([d, h, a]) => h === it.h && a === it.a && Math.abs(Date.parse(d) - Date.parse(it.iso)) < 12 * 3600e3);
       if (r) {
