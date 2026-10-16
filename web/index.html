@@ -703,10 +703,10 @@ const I18N = {
     fW:"G", fD:"B", fL:"M", deepTitle:"Derin analiz", dAtt:"Hücum gücü", dDef:"Savunma (düşük iyi)", dXg:"Beklenen gol", dForm:"Son 5 maç", dHome:"İç saha G-B-M", dAway:"Deplasman G-B-M",
     deepNote:"Hücum ve savunma gücü lig ortalamasına göredir: ×1,20 hücum, ortalama bir takımdan %20 fazla gol demektir. Savunmada ×0,80, ortalamadan %20 az gol yemek demektir.",
     cpEyebrow:"Her sabah 09:00 civarı", cpTitle:"Günün kuponu",
-    cpNone:"Oran verisi bağlandığında burada her sabah, önümüzdeki 24 saatin maçlarından en fazla 6 seçimlik bir kupon çıkacak.",
+    cpNone:"Oran verisi bağlandığında burada her sabah, önümüzdeki 36 saatin maçlarından en fazla 6 seçimlik bir kupon çıkacak.",
     cpOld:"Bugünün kuponu henüz hazırlanmadı; aşağıdaki {d} tarihli kupon.",
-    cpEmpty:"Önümüzdeki 24 saatteki {m} maçın hiçbiri kriterlere uymadı. Zayıf maçlarla doldurmadık.",
-    cpFew:"Önümüzdeki 24 saatteki {m} maçtan yalnızca {n} tanesi kriterlere uydu. Kuponu zayıf maçlarla 6'ya tamamlamadık.",
+    cpEmpty:"Önümüzdeki 36 saatteki {m} maçın hiçbiri kriterlere uymadı. Zayıf maçlarla doldurmadık.",
+    cpFew:"Önümüzdeki 36 saatteki {m} maçtan yalnızca {n} tanesi kriterlere uydu. Kuponu zayıf maçlarla 6'ya tamamlamadık.",
     cpNums:"Model {p} · bahisçi {q} · birleşik tahmin {c}", cpTotal:"Toplam oran", cpAll:"Hepsinin tutma ihtimali",
     cpResW:"Tuttu", cpResL:"Tutmadı", cpResV:"Ertelendi", cpResP:"Bekliyor", cpWon:"Kupon kazandı", cpLost:"Kupon kaybetti",
     cpWarn:"Kriter: oran en az {o}, model olasılığı en az {p}. Seçimler, modelle bahis piyasasının ortalaması olan birleşik tahmine göre sıralanır; model piyasadan çok farklı düşündüğünde genellikle piyasa haklı çıkar, bu yüzden ikisinin ortalaması daha gerçekçidir. Oranlar bahis şirketlerinin ortalamasıdır; oynayacağınız sitedeki oran farklı olabilir. Seçimlerin hepsinin birden tutma ihtimali düşüktür. Bu bir istatistik tahminidir, kazanç garantisi ya da bahis tavsiyesi değildir.",
@@ -763,10 +763,10 @@ const I18N = {
     fW:"W", fD:"D", fL:"L", deepTitle:"Deep analysis", dAtt:"Attack rating", dDef:"Defence (lower is better)", dXg:"Expected goals", dForm:"Last 5", dHome:"Home W-D-L", dAway:"Away W-D-L",
     deepNote:"Attack and defence ratings are relative to the league average: ×1.20 attack means 20% more goals than an average team. ×0.80 defence means conceding 20% fewer goals than average.",
     cpEyebrow:"Every morning around 09:00", cpTitle:"Coupon of the day",
-    cpNone:"Once odds data is connected, a coupon of up to 6 picks from the next 24 hours' matches will appear here every morning.",
+    cpNone:"Once odds data is connected, a coupon of up to 6 picks from the next 36 hours' matches will appear here every morning.",
     cpOld:"Today's coupon hasn't been built yet; this is the coupon from {d}.",
-    cpEmpty:"None of the {m} matches in the next 24 hours met the criteria. We didn't fill the coupon with weaker picks.",
-    cpFew:"Only {n} of the {m} matches in the next 24 hours met the criteria. We didn't pad the coupon to 6 with weaker picks.",
+    cpEmpty:"None of the {m} matches in the next 36 hours met the criteria. We didn't fill the coupon with weaker picks.",
+    cpFew:"Only {n} of the {m} matches in the next 36 hours met the criteria. We didn't pad the coupon to 6 with weaker picks.",
     cpNums:"Model {p} · bookmaker {q} · combined {c}", cpTotal:"Total odds", cpAll:"Chance all win",
     cpResW:"Won", cpResL:"Lost", cpResV:"Postponed", cpResP:"Pending", cpWon:"Coupon won", cpLost:"Coupon lost",
     cpWarn:"Criteria: odds of at least {o} and model probability of at least {p}. Picks are ranked by the combined estimate, the average of the model and the betting market; when the model disagrees strongly with the market, the market is usually right, so the average is more realistic. Odds are the bookmakers' average; the odds on the site you use may differ. The chance of all picks winning together is low. This is a statistical estimate, not a guarantee of winnings or betting advice.",
@@ -1320,12 +1320,15 @@ function applyData(j){
 // Oranlar ve kupon geçmişi data.json'dan gelir. Kupon her sabah GitHub'daki işte bu fonksiyonla hazırlanıp sabitlenir.
 const ODDS = {};            // lig → [{iso,h,a,o1,ox,o2,n}]
 let COUPONS = [];           // en yenisi başta
-const CP_MIN_ODDS = 1.80, CP_MIN_P = 0.55, CP_SIZE = 6, CP_WINDOW_H = 24;
+const CP_MIN_ODDS = 1.80, CP_MIN_P = 0.55, CP_SIZE = 6, CP_WINDOW_H = 36;
 function buildCoupon(nowMs){
   const now = nowMs ?? Date.now(), until = now + CP_WINDOW_H*3600e3;
   const cands = []; let nMatches = 0;
+  // Önceki günlerin kuponlarında yer alan maçlar tekrar seçilmez (pencereler üst üste biner)
+  const today = istDay.format(new Date(now));
+  const used = new Set(COUPONS.filter(c=>c.date!==today).flatMap(c=>c.items.map(i=>i.h+"|"+i.a)));
   Object.entries(ODDS).forEach(([lg,list])=>list.forEach(e=>{
-    const k=Date.parse(e.iso); if(!(k>now && k<=until)) return;
+    const k=Date.parse(e.iso); if(!(k>now && k<=until) || used.has(e.h+"|"+e.a)) return;
     nMatches++;
     const m=matchModel(lg,e.h,e.a,e.iso,false);
     const inv=1/e.o1+1/e.ox+1/e.o2;

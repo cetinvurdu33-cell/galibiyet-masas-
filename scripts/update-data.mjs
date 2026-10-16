@@ -62,6 +62,7 @@ const ALIASES = {
   "Amed SFK": "Amedspor",
   "Amed Sportif Faaliyetler": "Amedspor",
   "Amedspor": "Amedspor",
+  "Amed": "Amedspor",
   "BB Erzurumspor": "Erzurumspor",
   "Erzurum BB": "Erzurumspor",
   "Erzurumspor FK": "Erzurumspor",
@@ -342,10 +343,10 @@ async function oddsApi(path) {
 
 const median = a => { const b = [...a].sort((x, y) => x - y); const m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
 
-/** Önümüzdeki 36 saatteki maçların ortalama (medyan) 1-X-2 oranları: "ISO|Ev|Dep|1|X|2|bahisçi sayısı" */
+/** Önümüzdeki 48 saatteki maçların ortalama (medyan) 1-X-2 oranları: "ISO|Ev|Dep|1|X|2|bahisçi sayısı" */
 async function fetchOdds(known, allKnown, status) {
   const out = {};
-  const to = new Date(Date.now() + 36 * 3600e3).toISOString().replace(/\.\d{3}Z$/, "Z");
+  const to = new Date(Date.now() + 48 * 3600e3).toISOString().replace(/\.\d{3}Z$/, "Z");
   for (const [lg, key] of Object.entries(ODDS_SPORTS)) {
     try {
       const j = await oddsApi(`sports/${key}/odds?regions=eu&markets=h2h&oddsFormat=decimal&dateFormat=iso&commenceTimeTo=${to}`);
