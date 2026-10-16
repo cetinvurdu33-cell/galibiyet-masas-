@@ -197,7 +197,15 @@ function buildLeague(code, json, known) {
     if (ft.home > ft.away) home.hw++; else if (ft.home < ft.away) home.aw++; else home.d++;
   }
 
-  return { table, halves, fixtures, home, names, played: ordered.reduce((s, [, r]) => s + r.W + r.D + r.L, 0) / 2 };
+  // Bitmiş maçlar (takım güçlerini maç maç hesaplamak, form ve model karnesi için): "ISO|Ev|Dep|EvGol|DepGol"
+  const results = tableMatches
+    .filter(m => m.status === "FINISHED" && m.homeTeam?.id && m.awayTeam?.id)
+    .map(m => ({ m, ft: m.score?.regularTime ?? m.score?.fullTime }))
+    .filter(({ ft }) => ft?.home != null && ft?.away != null)
+    .sort((a, b) => Date.parse(a.m.utcDate) - Date.parse(b.m.utcDate))
+    .map(({ m, ft }) => `${m.utcDate}|${nm(m.homeTeam)}|${nm(m.awayTeam)}|${ft.home}|${ft.away}`).join("\n");
+
+  return { table, halves, fixtures, home, results, names, played: ordered.reduce((s, [, r]) => s + r.W + r.D + r.L, 0) / 2 };
 }
 
 // ---------- Gol katkısı (football-data) ----------
@@ -322,7 +330,7 @@ async function main() {
     try {
       const lg = buildLeague(code, await getMatches(code), code === "CL" ? allKnown : known[name] || []);
       if (!lg.table) throw new Error(`${code}: maç bulunamadı`);
-      leagues[name] = { table: lg.table, halves: lg.halves, fixtures: lg.fixtures, home: lg.home };
+      leagues[name] = { table: lg.table, halves: lg.halves, fixtures: lg.fixtures, home: lg.home, results: lg.results };
       console.log(`✓ ${name}: ${lg.table.split("\n").length} takım, ${lg.played} maç, ` +
         `${lg.fixtures ? lg.fixtures.split("\n").length : 0} yaklaşan maç, ev golleri ${lg.home.hg}-${lg.home.ag}`);
       if (!process.env.FD_MOCK_DIR) await sleep(7000);
@@ -349,7 +357,7 @@ async function main() {
     try {
       const sl = buildLeague("SL", afToMatches(await af(`fixtures?league=203&season=${SEASON}`)), known["Süper Lig"] || []);
       if (!sl.table) throw new Error("maç bulunamadı");
-      leagues["Süper Lig"] = { table: sl.table, halves: sl.halves, fixtures: sl.fixtures, home: sl.home };
+      leagues["Süper Lig"] = { table: sl.table, halves: sl.halves, fixtures: sl.fixtures, home: sl.home, results: sl.results };
       const unk = [...sl.names.values()].filter(n => !(known["Süper Lig"] || []).includes(n));
       if (unk.length) status.unmatched.push(...unk.map(n => "Süper Lig: " + n));
       console.log(`✓ Süper Lig (API-Football): ${sl.table.split("\n").length} takım, ${sl.played} maç`);
@@ -381,6 +389,9 @@ async function main() {
     console.log(`::notice title=Ev ve deplasman golleri::${homeTxt}`);
     console.log(`::notice title=Eksik oyuncular::${absTxt}`);
     if (errors.length) console.log(`::warning title=Alınamayan veriler::${errors.join(" | ").slice(0, 900)}`);
+    // Elle başlatılan çalışmada istenirse maç sonuçlarını da yaz (model kontrolü için)
+    if (process.env.DUMP_RESULTS === "true") for (const [k, v] of Object.entries(leagues))
+      if (v.results) console.log(`::notice title=Sonuçlar ${k}::${v.results.replace(/\n/g, " ; ")}`);
     if (status.unmatched.length) console.log(`::warning title=Eşleşmeyen takım adları::${status.unmatched.join(", ")}`);
   }
   console.log(`web/data.json yazıldı (${Object.keys(leagues).length} lig, ${absences.length} eksik oyuncu kaydı${errors.length ? `, ${errors.length} hata` : ""}).`);

@@ -8,6 +8,11 @@ on:
   schedule:
     - cron: "17 */3 * * *"
   workflow_dispatch:
+    inputs:
+      dump:
+        description: "Maç sonuçlarını iş özetine yaz (kontrol için)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -38,6 +43,7 @@ jobs:
           FOOTBALL_DATA_TOKEN: ${{ secrets.FOOTBALL_DATA_TOKEN }}
           # İsteğe bağlı: sakat/cezalı oyuncular ve Süper Lig maçları için
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          DUMP_RESULTS: ${{ inputs.dump }}
         run: |
           if [ -z "$FOOTBALL_DATA_TOKEN" ]; then
             echo "::warning::FOOTBALL_DATA_TOKEN eklenmemiş, veriler güncellenmedi."
