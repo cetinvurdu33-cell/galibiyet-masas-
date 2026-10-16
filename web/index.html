@@ -717,6 +717,13 @@ const I18N = {
     cpWarn:"Kriter: oran en az {o}, model en az piyasa kadar iyimser ve birleşik tahmin en az {p}. Birleşik tahmin %40 model, %60 bahis piyasasıdır; piyasa sakatlık ve kadro haberlerini bizden iyi yansıttığı için ağırlığı daha fazladır. Seçimler takım galibiyeti ya da 2,5 üst/alt olabilir, bir maçtan tek seçim alınır. Oranlar bahis şirketlerinin ortalamasıdır; oynayacağınız sitedeki oran farklı olabilir. Seçimlerin hepsinin birden tutma ihtimali düşüktür. Bu bir istatistik tahminidir, kazanç garantisi ya da bahis tavsiyesi değildir.",
     cpShowAlt:"Alternatif kupon göster", cpBackMain:"Ana kupona dön", cpMainLbl:"Ana kupon · en güçlü seçimler",
     cpAltLbl:"Alternatif {k}/{n} · sıralamada {a}-{b}. seçimler, aynı kriterler", cpNoAlt:"Aynı kriterlere uyan başka seçim olmadığı için alternatif kupon yok.",
+    cpAltsHist:"alternatifler {t}",
+    lnTitle:"Model nasıl öğreniyor?", lnYday:"Dünün kuponları:", lnYMain:"ana kupon {w}/{n} tuttu", lnYAlt:"alternatif {k}: {w}/{n}", lnYNone:"dün kupon yoktu.",
+    lnMkt:"Piyasa payı şu an {p}; {n} sonuçlanmış maçta modelle piyasanın hangi karışımının daha iyi tahmin ettiğine bakılarak ayarlanıyor.",
+    lnMktWait:"Piyasa payı şimdilik {p}. Ayarlamak için en az {m} sonuçlanmış maç gerekiyor, şu an {n}.",
+    lnCal:"{m} seçimlerinde beklenen tutma {e}, gerçekleşen {h} ({n} seçim); güven ×{f}.", lnSide:"Taraf (1/2)", lnOU:"2,5 Üst/Alt",
+    lnModel:"Model ayarları {d} sabahı bu sezonun bütün maçlarıyla yeniden sınandı; yalnızca belirgin iyileşme kabul edilir.",
+    lnNote:"Az sayıda maçla yapılan değişiklikler frenlenir; birkaç şanslı ya da şanssız sonuç modeli savurmaz. Her sabah dünün skorları alınır, kuponlar kontrol edilir ve öğrenilen ayarlar o günün tahminlerinde kullanılır.",
     cpHist:"Kupon karnesi", cpHistSum:"Sonuçlanan {c} kuponun {w} tanesi kazandı. Tek tek seçimlerde {n} maçın {h} tanesi tuttu ({p}).", cpPicks:"seçim",
     cpSt_won:"kazandı", cpSt_lost:"kaybetti", cpSt_pending:"bekliyor", cpSt_empty:"seçim yok", cpSt_void:"ertelendi",
     karneTitle:"Model karnesi", karneHit:"bu sezon {l} maçlarında en olası sonucun tutma oranı: {n} maçtan {h} tanesinde doğru çıktı.", karneHi:"Yüksek güvenli tahminler: {n} maçtan {h} tanesi doğru ({p}).",
@@ -783,6 +790,13 @@ const I18N = {
     cpWarn:"Criteria: odds of at least {o}, the model at least as optimistic as the market, and a combined estimate of at least {p}. The combined estimate is 40% model and 60% betting market; the market gets more weight because it reflects injury and squad news better than we do. Picks can be a team win or over/under 2.5 goals, with one pick per match. Odds are the bookmakers' average; the odds on the site you use may differ. The chance of all picks winning together is low. This is a statistical estimate, not a guarantee of winnings or betting advice.",
     cpShowAlt:"Show alternative coupon", cpBackMain:"Back to main coupon", cpMainLbl:"Main coupon · strongest picks",
     cpAltLbl:"Alternative {k}/{n} · picks ranked {a}-{b}, same criteria", cpNoAlt:"No alternative coupon: no other picks meet the same criteria.",
+    cpAltsHist:"alternatives {t}",
+    lnTitle:"How does the model learn?", lnYday:"Yesterday's coupons:", lnYMain:"main coupon {w}/{n} came in", lnYAlt:"alternative {k}: {w}/{n}", lnYNone:"there was no coupon yesterday.",
+    lnMkt:"Market share is now {p}; it is adjusted by checking which mix of model and market predicted {n} settled matches better.",
+    lnMktWait:"Market share is {p} for now. At least {m} settled matches are needed to adjust it; there are {n}.",
+    lnCal:"{m} picks: expected hit rate {e}, actual {h} ({n} picks); confidence ×{f}.", lnSide:"Side (1/2)", lnOU:"Over/under 2.5",
+    lnModel:"Model settings were re-tested on the morning of {d} against all of this season's matches; only a clear improvement is accepted.",
+    lnNote:"Changes based on few matches are damped, so a handful of lucky or unlucky results can't swing the model. Every morning yesterday's scores are fetched, coupons are checked and the learned settings are used in that day's predictions.",
     cpHist:"Coupon record", cpHistSum:"{w} of {c} settled coupons won. Individually, {h} of {n} picks came in ({p}).", cpPicks:"picks",
     cpSt_won:"won", cpSt_lost:"lost", cpSt_pending:"pending", cpSt_empty:"no picks", cpSt_void:"void",
     karneTitle:"Model report card", karneHit:"of {l} matches this season had the most likely result predicted correctly ({h} of {n}).", karneHi:"High-confidence predictions: correct in {h} of {n} matches ({p}).",
@@ -1069,6 +1083,9 @@ function impact(team,lg,iso){
 const RESULTS = {};               // lig → [{d,h,a,hg,ag}] (tarih sıralı)
 const ODDS = {};                  // lig → [{iso,h,a,o1,ox,o2,n,ov,un}] (data.json'dan)
 let COUPONS = [];                 // günün kuponları, en yenisi başta
+let PREDLOG = [];                 // oranı olan maçlarda o günkü model ve piyasa tahmini + sonuç (öğrenme için)
+let LEARN = null;                 // her sabah sonuçlardan öğrenilen ayarlar
+const CALIB = {};                 // kupon pazarına göre güven düzeltmesi ("1X2", "OU")
 // Model ayarları (bu sezonun maçlarıyla yapılan geriye dönük testte seçildi; bkz. "Model karnesi")
 const MP = {
   half: 45,      // bu kadar gün önceki maç yarım ağırlık taşır
@@ -1373,6 +1390,8 @@ function applyData(j){
     if(add.length) FIXTURES[lg]=[...(FIXTURES[lg]||"").split("\n").filter(Boolean),...add].sort().join("\n");
   });
   COUPONS = Array.isArray(j.couponHistory) ? j.couponHistory : [];
+  PREDLOG = Array.isArray(j.predLog) ? j.predLog : [];
+  if(j.learn){ LEARN=j.learn; applyLearn(j.learn); }
   if(j.h2h) H2H_LOADED = true;
   Object.entries(j.h2h?.pairs||{}).forEach(([k,v])=>{ H2H[k]=(v||"").split(";").filter(Boolean).map(r=>{ const [d,h,a,hg,ag]=r.split("|"); return {d,h,a,hg:+hg,ag:+ag}; }); });
   // Otomatik tablosu olmayan ligler (Süper Lig): The Odds API skorlarıyla gelen yeni sonuçlar tabloya ve modele eklenir
@@ -1419,7 +1438,9 @@ function rankCandidates(now, exclude=new Set()){
     opts.forEach(([mk,side,p,pc,o,iv])=>{
       // Seçim kuralı: oran ≥ 1,80; model en az piyasa kadar iyimser; birleşik tahmin (model + piyasa) ≥ %45
       const imp=(1/o)/iv;
-      if(o>=CP_MIN_ODDS && p>=imp && pc>=CP_MIN_P) cands.push({lg,iso:e.iso,h:e.h,a:e.a,mk,side,odds:o,p:+p.toFixed(4),imp:+imp.toFixed(4),pc:+pc.toFixed(4)});
+      // Geçmiş kupon sonuçlarından öğrenilen düzeltme (bu pazarda tahminler fazla iyimser çıktıysa güven düşer)
+      const pcc = Math.min(0.95, pc*(CALIB[mk]??1));
+      if(o>=CP_MIN_ODDS && p>=imp && pcc>=CP_MIN_P) cands.push({lg,iso:e.iso,h:e.h,a:e.a,mk,side,odds:o,p:+p.toFixed(4),imp:+imp.toFixed(4),pc:+pcc.toFixed(4)});
     });
   }));
   cands.sort((x,y)=>y.pc-x.pc || y.p-x.p);
@@ -1485,11 +1506,91 @@ function renderCoupon(){
   const picks=COUPONS.flatMap(x=>x.items).filter(i=>i.res==="W"||i.res==="L");
   const hist = COUPONS.length>1||done.length ? `<details class="cp-hist"><summary>${t_("cpHist")}</summary>
       <p style="margin:6px 0 0">${t_("cpHistSum",{c:done.length,w:done.filter(x=>x.status==="won").length,n:picks.length,h:picks.filter(i=>i.res==="W").length,p:picks.length?pct(picks.filter(i=>i.res==="W").length/picks.length):"–"})}</p>
-      <ul>${COUPONS.slice(0,10).map(x=>`<li>${esc(dday(x.date))} · ${x.items.length} ${t_("cpPicks")} · ${x.items.filter(i=>i.res==="W").length}/${x.items.length} · ${t_("cpSt_"+x.status)}</li>`).join("")}</ul></details>` : "";
-  box.innerHTML = head+old+empty+nav+`<div class="cp-list">${rows}</div>`+few+sum+`<p class="cp-warn">${t_("cpWarn",{o:dec(CP_MIN_ODDS,2),p:pct(CP_MIN_P)})}</p>`+hist;
+      <ul>${COUPONS.slice(0,10).map(x=>`<li>${esc(dday(x.date))} · ${x.items.length} ${t_("cpPicks")} · ${x.items.filter(i=>i.res==="W").length}/${x.items.length} · ${t_("cpSt_"+x.status)}${(x.alts||[]).length?" · "+t_("cpAltsHist",{t:(x.alts||[]).map(a=>`${a.filter(i=>i.res==="W").length}/${a.length}`).join(", ")}):""}</li>`).join("")}</ul></details>` : "";
+  box.innerHTML = head+old+empty+nav+`<div class="cp-list">${rows}</div>`+few+sum+`<p class="cp-warn">${t_("cpWarn",{o:dec(CP_MIN_ODDS,2),p:pct(CP_MIN_P)})}</p>`+hist+learnHTML();
+}
+// ---- Öğrenme ----
+// Bugünün oranlı maçları için model ve piyasa tahminini kaydeder; sonuçlar gelince öğrenmede kullanılır
+function snapshot(now){
+  const out=[];
+  Object.entries(ODDS).forEach(([lg,list])=>list.forEach(e=>{
+    if(Date.parse(e.iso)<=now) return;
+    const m=matchModel(lg,e.h,e.a,e.iso,false); if(!m.mk) return;
+    const r=x=>+x.toFixed(4);
+    out.push({k:`${e.h}|${e.a}|${e.iso.slice(0,10)}`,lg,iso:e.iso,h:e.h,a:e.a,
+      m:[r(m.raw.p1),r(m.raw.px),r(m.raw.p2),r(m.raw.o25)], q:[r(m.mk.p1),r(m.mk.px),r(m.mk.p2),m.mk.o25==null?null:r(m.mk.o25)]});
+  }));
+  return out;
+}
+function applyLearn(Lr){
+  if(!Lr) return;
+  if(Lr.mp) Object.assign(MP, Lr.mp);
+  if(Lr.mkt!=null) MP.mkt = Lr.mkt;
+  Object.assign(CALIB, Lr.calib||{});
+  for(const k in RCACHE) delete RCACHE[k]; for(const k in BTCACHE) delete BTCACHE[k];
+}
+const MKT_DEFAULT = 0.6, MKT_MIN_N = 60;
+function learn(){
+  const notes=[], now=Date.now();
+  const yday = istDay.format(new Date(now-864e5));
+  // 1) Piyasa payı: sonuçlanmış oranlı maçlarda hangi karışım daha iyi tahmin etti?
+  const set=PREDLOG.filter(e=>e.hg!=null);
+  let mkt = MP.mkt, mktBest=null;
+  if(set.length>=MKT_MIN_N){
+    let best=null;
+    for(let w=0.2; w<=0.951; w+=0.05){ let ll=0;
+      set.forEach(e=>{ const o=e.hg>e.ag?0:e.hg===e.ag?1:2; const p=(1-w)*e.m[o]+w*e.q[o]; ll-=Math.log(Math.max(1e-6,p)); });
+      if(!best||ll<best.ll) best={w:+w.toFixed(2),ll}; }
+    mktBest=best.w;
+    // az veriyle savrulmasın: varsayılana doğru çekilir
+    const sh=set.length/(set.length+200);
+    mkt=+(MKT_DEFAULT+(best.w-MKT_DEFAULT)*sh).toFixed(3);
+    notes.push(`piyasa payı ${Math.round(MP.mkt*100)}% → ${Math.round(mkt*100)}% (${set.length} maç, en iyi ${Math.round(best.w*100)}%)`);
+  } else notes.push(`piyasa payı için ${set.length}/${MKT_MIN_N} sonuçlu maç`);
+  // 2) Model ayarları: bu sezonun bütün maçlarıyla yeniden sına, yalnızca belirgin iyileşmeyi kabul et
+  const lgs=Object.keys(RESULTS).filter(lg=>(RESULTS[lg]||[]).length>=30);
+  const score=()=>{ for(const k in RCACHE) delete RCACHE[k]; for(const k in BTCACHE) delete BTCACHE[k];
+    let n=0,ll=0; lgs.forEach(lg=>{ const r=backtest(lg); if(r.n){ n+=r.n; ll+=r.ll*r.n; } }); return n?ll/n:null; };
+  const keys={half:[30,45,60,90],prior:[8,12,16],newA:[0.7,0.75,0.85],newD:[1.0,1.05,1.15]};
+  const start={...MP}; const base=score(); let cur=base, mp={};
+  if(base!=null){
+    for(const [k,vals] of Object.entries(keys)){ let bestV=MP[k];
+      for(const v of vals){ const old=MP[k]; MP[k]=v; const sc=score(); if(sc<cur-0.0005){ cur=sc; bestV=v; } MP[k]=old; }
+      MP[k]=bestV; if(bestV!==start[k]) mp[k]=bestV; }
+    notes.push(Object.keys(mp).length ? `model ayarları güncellendi (hata ${base.toFixed(4)} → ${cur.toFixed(4)})` : `model ayarları korundu (hata ${base.toFixed(4)})`);
+  }
+  // 3) Kupon seçimleri: pazara göre beklenen ve gerçekleşen tutma oranı
+  const picks=COUPONS.flatMap(c=>[...c.items,...(c.alts||[]).flat()]).filter(i=>i.res==="W"||i.res==="L");
+  const calib={}, calibStats={};
+  ["1X2","OU"].forEach(mk=>{ const ps=picks.filter(i=>(i.mk||"1X2")===mk); const n=ps.length; if(!n) return;
+    const hits=ps.filter(i=>i.res==="W").length, exp=ps.reduce((s,i)=>s+(i.pc??i.p),0)/n;
+    const shr=(hits+exp*30)/(n+30);                      // 30 seçimlik ön bilgiyle frenlenir
+    const f = n>=20 ? Math.min(1.1,Math.max(0.8,shr/exp)) : 1;
+    calib[mk]=+f.toFixed(3); calibStats[mk]={n,hits,exp:+exp.toFixed(3)};
+    notes.push(`${mk==="OU"?"2,5 Üst/Alt":"taraf"} seçimleri: beklenen ${Math.round(exp*100)}%, gerçekleşen ${Math.round(hits/n*100)}% (${n} seçim)${n>=20?`, güven ×${dec(f,2)}`:""}`); });
+  // dünün kuponları
+  const yc=COUPONS.find(c=>c.date===yday);
+  const ystat = yc ? {main:[yc.items.filter(i=>i.res==="W").length, yc.items.filter(i=>i.res).length, yc.items.length],
+    alts:(yc.alts||[]).map(a=>[a.filter(i=>i.res==="W").length, a.filter(i=>i.res).length, a.length])} : null;
+  const Lr={date:istDay.format(new Date(now)), mkt, mktBest, mp:{...(LEARN?.mp||{}),...mp}, calib, calibStats, yday:ystat,
+    stats:{settled:set.length, picks:picks.length, ll:cur, lgs:lgs.length}, notes};
+  LEARN=Lr; applyLearn(Lr);
+  return Lr;
+}
+function learnHTML(){
+  const Lr=LEARN; if(!Lr) return "";
+  const y=Lr.yday;
+  const yTxt = y ? [t_("lnYMain",{w:y.main[0],n:y.main[2]}), ...y.alts.map((a,i)=>t_("lnYAlt",{k:i+1,w:a[0],n:a[2]}))].join(" · ") : t_("lnYNone");
+  const cal = Object.entries(Lr.calibStats||{}).map(([mk,s])=>t_("lnCal",{m:t_(mk==="OU"?"lnOU":"lnSide"),e:pct(s.exp),h:pct(s.hits/s.n),n:s.n,f:dec(Lr.calib[mk]??1,2)})).join(" ");
+  return `<details class="cp-hist"><summary>${t_("lnTitle")}</summary>
+    <p style="margin:6px 0 0"><b>${t_("lnYday")}</b> ${yTxt}</p>
+    <p style="margin:6px 0 0">${Lr.stats.settled>=MKT_MIN_N ? t_("lnMkt",{p:pct(Lr.mkt),n:Lr.stats.settled}) : t_("lnMktWait",{n:Lr.stats.settled,m:MKT_MIN_N,p:pct(Lr.mkt)})}</p>
+    ${cal?`<p style="margin:6px 0 0">${cal}</p>`:""}
+    <p style="margin:6px 0 0">${t_("lnModel",{d:dday(Lr.date)})}</p>
+    <p class="cp-warn" style="margin-top:6px">${t_("lnNote")}</p></details>`;
 }
 $("couponSec").addEventListener("click",e=>{ if(!e.target.closest("#cpAlt")) return; CP_VIEW++; renderCoupon(); });
-window.GM = { ready:false, buildCoupon, MP, backtest, reset:()=>{ for(const k in RCACHE) delete RCACHE[k]; for(const k in BTCACHE) delete BTCACHE[k]; } };
+window.GM = { ready:false, buildCoupon, learn, snapshot, MP, backtest, reset:()=>{ for(const k in RCACHE) delete RCACHE[k]; for(const k in BTCACHE) delete BTCACHE[k]; } };
 
 function absSrc(lg){
   const v=ABS_SRC[lg]; if(!v||!v.source) return "";

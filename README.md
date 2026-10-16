@@ -55,6 +55,15 @@ Her sabah (İstanbul saatiyle 08:00'den sonraki ilk güncellemede) The Odds API'
 
 Kurulum: the-odds-api.com adresinden ücretsiz anahtar alın (ayda 500 kredi) ve GitHub'a `ODDS_API_KEY` adıyla ekleyin. Günde yaklaşık 7-9 kredi harcanır. Kuponu hemen yeniden hazırlamak için Actions sekmesinde "Web uygulamasını yayınla" işini "Oranları şimdi yeniden çek" seçeneğiyle çalıştırın.
 
+### Öğrenme
+
+Her sabah kupon hazırlanmadan önce (`window.GM.learn()`):
+1. Dünün ana ve alternatif kuponlarının skorları işlenir; taraf (1/2) ve 2,5 Üst/Alt seçimleri için beklenen ve gerçekleşen tutma oranı karşılaştırılır. En az 20 seçimden sonra güven düzeltmesi uygulanır (30 seçimlik ön bilgiyle frenlenir, ×0,80-×1,10 arası).
+2. `predLog`: oranı olan her maç için o sabahki model ve piyasa tahmini kaydedilir, sonuç gelince işlenir. En az 60 sonuçlu maçtan sonra modelle piyasanın en iyi karışımı bulunur ve varsayılan %60'a doğru frenlenerek uygulanır.
+3. Model ayarları bu sezonun bütün maçlarıyla yeniden sınanır; yalnızca hata payını belirgin düşüren değişiklik kabul edilir.
+
+Öğrenilen ayarlar `learn` alanında saklanır ve sayfa açılınca uygulanır.
+
 Notlar:
 - İş saatleri UTC'ye göredir ve GitHub yoğunken birkaç dakika gecikebilir.
 - GitHub, 60 gün boyunca hiç değişiklik yapılmayan depolarda zamanlanmış işleri durdurur. Bu olursa e-posta gelir; Actions sekmesinden işi yeniden etkinleştirin.

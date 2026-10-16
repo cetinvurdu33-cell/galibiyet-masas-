@@ -496,6 +496,21 @@ async function settleCoupons(history, leagues, known) {
   }
 }
 
+/** Tahmin kaydındaki maçların sonuçlarını işler (öğrenme için). 10 günde sonuç gelmeyen kayıt silinir. */
+function settlePredLog(log, leaguesAll) {
+  const rowsOf = {};
+  const rows = lg => rowsOf[lg] ??= (leaguesAll[lg]?.results || "").split("\n").filter(Boolean).map(r => r.split("|"));
+  let n = 0;
+  const kept = log.filter(e => {
+    if (e.hg != null) return true;
+    const r = rows(e.lg).find(([d, h, a]) => h === e.h && a === e.a && Math.abs(Date.parse(d) - Date.parse(e.iso)) < 12 * 3600e3);
+    if (r) { e.hg = +r[3]; e.ag = +r[4]; n++; return true; }
+    return Date.parse(e.iso) > Date.now() - 10 * 864e5;
+  });
+  if (n) console.log(`✓ Tahmin kaydı: ${n} maçın sonucu işlendi`);
+  return kept.slice(-3000);
+}
+
 async function main() {
   if (!process.env.FD_MOCK_DIR && !process.env.FOOTBALL_DATA_TOKEN) {
     console.error("FOOTBALL_DATA_TOKEN tanımlı değil. GitHub'da Settings → Secrets and variables → Actions bölümüne ekleyin.");
@@ -605,7 +620,12 @@ async function main() {
     catch (e) { console.warn("✗ Aralarındaki maçlar: " + e.message); }
   }
 
-  const out = { updated: new Date().toISOString(), source: "football-data.org", leagues, absences, status, odds, couponHistory, extraResults, extraResultsFetched, h2h, needCoupon };
+  // Öğrenme: önceki günlerin tahmin kaydı ve öğrenilen ayarlar devralınır; sonuçlar işlenir
+  const allRes = { ...Object.fromEntries(Object.entries(extraResults).map(([k, v]) => [k, { results: v }])), ...leagues };
+  const predLog = settlePredLog(prev?.predLog || [], allRes);
+  const learn = prev?.learn || null;
+
+  const out = { updated: new Date().toISOString(), source: "football-data.org", leagues, absences, status, odds, couponHistory, extraResults, extraResultsFetched, h2h, predLog, learn, needCoupon };
   writeFileSync(OUT, JSON.stringify(out));
   // GitHub Actions özetinde görünsün diye (kontrol için)
   if (process.env.GITHUB_ACTIONS) {

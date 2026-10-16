@@ -37,7 +37,14 @@ try {
   await page.route(/^https?:\/\/(?!127\.0\.0\.1)/, r => r.abort());
   await page.goto(url);
   await page.waitForFunction(() => window.GM && window.GM.ready, null, { timeout: 30000 });
-  coupon = await page.evaluate(() => window.GM.buildCoupon(Date.now()));
+  // Önce dünkü sonuçlardan öğren, sonra bugünün tahminlerini kaydet ve kuponu kur
+  const r = await page.evaluate(() => { const L = window.GM.learn(); const snap = window.GM.snapshot(Date.now()); const c = window.GM.buildCoupon(Date.now()); return { L, snap, c }; });
+  coupon = r.c;
+  data.learn = r.L;
+  const have = new Set((data.predLog || []).map(e => e.k));
+  data.predLog = [...(data.predLog || []), ...r.snap.filter(e => !have.has(e.k))].slice(-3000);
+  console.log(`✓ Öğrenme: piyasa payı ${r.L.mkt}, kayıt ${data.predLog.length} maç (${r.L.stats.settled} sonuçlu)`);
+  if (process.env.GITHUB_ACTIONS) console.log(`::notice title=Öğrenme::${r.L.notes.join(" · ")}`);
 } catch (e) {
   console.error("Kupon hazırlanamadı: " + e.message);
 } finally {
