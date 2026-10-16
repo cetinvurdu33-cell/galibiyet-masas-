@@ -13,6 +13,10 @@ on:
         description: "Maç sonuçlarını iş özetine yaz (kontrol için)"
         type: boolean
         default: false
+      force_odds:
+        description: "Oranları şimdi yeniden çek ve kuponu yeniden hazırla"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -44,11 +48,26 @@ jobs:
           # İsteğe bağlı: sakat/cezalı oyuncular ve Süper Lig maçları için
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
           DUMP_RESULTS: ${{ inputs.dump }}
+          # İsteğe bağlı: günün kuponu için bahis oranları
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          FORCE_ODDS: ${{ inputs.force_odds }}
+          PAGES_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data.json
         run: |
           if [ -z "$FOOTBALL_DATA_TOKEN" ]; then
             echo "::warning::FOOTBALL_DATA_TOKEN eklenmemiş, veriler güncellenmedi."
           else
             node scripts/update-data.mjs
+          fi
+
+      # Yeni oran geldiyse günün kuponunu sayfadaki modelle hazırla
+      - name: Günün kuponunu hazırla
+        run: |
+          if [ -f web/data.json ] && grep -q '"needCoupon":true' web/data.json; then
+            mkdir -p /tmp/pw && cd /tmp/pw && npm init -y >/dev/null && npm i playwright@1.48.2 >/dev/null
+            npx playwright install --with-deps chromium >/dev/null
+            cd "$GITHUB_WORKSPACE" && PW_DIR=/tmp/pw node scripts/coupon.mjs
+          else
+            echo "Yeni oran yok; kupon değişmedi."
           fi
 
       - uses: actions/configure-pages@v5
