@@ -167,6 +167,12 @@ footer{font-size:12px;color:var(--muted)}
 .cp-drow.W{border-left-color:var(--win)}.cp-drow.L{border-left-color:var(--loss)}
 .cp-drow .dm{font-weight:600;min-width:0}
 .cp-drow .ds{grid-column:1;color:var(--muted);font-size:12px}
+.cp-add{grid-column:2;grid-row:3;justify-self:end;font:inherit;font-size:12px;font-weight:600;padding:2px 10px;border-radius:999px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;white-space:nowrap}
+.cp-add[aria-pressed="true"]{background:var(--accent);color:var(--bg)}
+.my{border:1px solid var(--accent);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.my h3{font-size:16px;margin:0}
+.my .acts{display:flex;gap:8px;flex-wrap:wrap}
+.my .x{font:inherit;font-size:12px;border:0;background:none;color:var(--muted);cursor:pointer;padding:0 4px}
 .cp-drow .st{grid-column:2;grid-row:1/3;align-self:center}
 .cp-hist summary{cursor:pointer;color:var(--accent);font-weight:600}
 .cp-hist ul{margin:6px 0 0;padding-left:18px}
@@ -727,7 +733,7 @@ const I18N = {
     cpWarn:"Kriter: oran en az {o}, model en az piyasa kadar iyimser ve birleşik tahmin en az {p}. Birleşik tahmin %40 model, %60 bahis piyasasıdır; piyasa sakatlık ve kadro haberlerini bizden iyi yansıttığı için ağırlığı daha fazladır. Seçimler takım galibiyeti ya da 2,5 üst/alt olabilir, bir maçtan tek seçim alınır. Oranlar bahis şirketlerinin ortalamasıdır; oynayacağınız sitedeki oran farklı olabilir. Seçimlerin hepsinin birden tutma ihtimali düşüktür. Bu bir istatistik tahminidir, kazanç garantisi ya da bahis tavsiyesi değildir.",
     cpShowAlt:"Alternatif kupon göster", cpBackMain:"Ana kupona dön", cpMainLbl:"Ana kupon · en güçlü seçimler",
     cpAltLbl:"Alternatif {k}/{n} · sıralamada {a}-{b}. seçimler, aynı kriterler", cpNoAlt:"Aynı kriterlere uyan başka seçim olmadığı için alternatif kupon yok.",
-    cpAltsHist:"alternatifler {t}", cpAltN:"Alternatif {k}",
+    cpAltsHist:"alternatifler {t}", cpAltN:"Alternatif {k}", myAdd:"+ Kuponuma ekle", myIn:"✓ Kuponumda", myTitle:"Kuponum", myDraft:"Hazırlanan kupon: {n} seçim", myHint:"Ana kupondan ve alternatiflerden seçimlerin yanındaki \"Kuponuma ekle\" düğmesine dokunarak kendi kuponunu kur. Her maçtan tek seçim alınır.", mySave:"Kuponu kaydet", myClear:"Temizle", mySaved:"Kaydettiğim kuponlar", myDel:"Sil", myDelQ:"Bu kupon silinsin mi?", myNote:"Kuponların bu cihazda saklanır. Maçlar oynanınca sonuçlar her güncellemede kendiliğinden işlenir.", myMade:"{d} tarihinde kuruldu",
     lnTitle:"Model nasıl öğreniyor?", lnYday:"Dünün kuponları:", lnYMain:"ana kupon {w}/{n} tuttu", lnYAlt:"alternatif {k}: {w}/{n}", lnYNone:"dün kupon yoktu.",
     lnMkt:"Piyasa payı şu an {p}; {n} sonuçlanmış maçta modelle piyasanın hangi karışımının daha iyi tahmin ettiğine bakılarak ayarlanıyor.",
     lnMktWait:"Piyasa payı şimdilik {p}. Ayarlamak için en az {m} sonuçlanmış maç gerekiyor, şu an {n}.",
@@ -800,7 +806,7 @@ const I18N = {
     cpWarn:"Criteria: odds of at least {o}, the model at least as optimistic as the market, and a combined estimate of at least {p}. The combined estimate is 40% model and 60% betting market; the market gets more weight because it reflects injury and squad news better than we do. Picks can be a team win or over/under 2.5 goals, with one pick per match. Odds are the bookmakers' average; the odds on the site you use may differ. The chance of all picks winning together is low. This is a statistical estimate, not a guarantee of winnings or betting advice.",
     cpShowAlt:"Show alternative coupon", cpBackMain:"Back to main coupon", cpMainLbl:"Main coupon · strongest picks",
     cpAltLbl:"Alternative {k}/{n} · picks ranked {a}-{b}, same criteria", cpNoAlt:"No alternative coupon: no other picks meet the same criteria.",
-    cpAltsHist:"alternatives {t}", cpAltN:"Alternative {k}",
+    cpAltsHist:"alternatives {t}", cpAltN:"Alternative {k}", myAdd:"+ Add to my coupon", myIn:"✓ In my coupon", myTitle:"My coupon", myDraft:"Coupon in progress: {n} picks", myHint:"Build your own coupon by tapping \"Add to my coupon\" next to picks in the main coupon and the alternatives. One pick per match.", mySave:"Save coupon", myClear:"Clear", mySaved:"My saved coupons", myDel:"Delete", myDelQ:"Delete this coupon?", myNote:"Your coupons are stored on this device. Results are checked automatically on every update once the matches are played.", myMade:"made on {d}",
     lnTitle:"How does the model learn?", lnYday:"Yesterday's coupons:", lnYMain:"main coupon {w}/{n} came in", lnYAlt:"alternative {k}: {w}/{n}", lnYNone:"there was no coupon yesterday.",
     lnMkt:"Market share is now {p}; it is adjusted by checking which mix of model and market predicted {n} settled matches better.",
     lnMktWait:"Market share is {p} for now. At least {m} settled matches are needed to adjust it; there are {n}.",
@@ -1492,6 +1498,42 @@ function dayHTML(x,st){
       <span class="ds">${selTxt(i)} · ${dec(i.odds,2)}</span><span class="st ${i.res||"P"}">${t_("cpRes"+(i.res||"P"))}</span></div>`).join("")}</div>`;
   return block(t_("cpMainLbl"),x.items)+(x.alts||[]).map((a,k)=>block(t_("cpAltN",{k:k+1}),a)).join("") || `<p class="cp-warn">${t_("cpSt_empty")}</p>`;
 }
+// ---- Kuponum: kullanıcının ana kupon ve alternatiflerden kurduğu kuponlar (bu cihazda saklanır) ----
+const MY = { draft:[], saved:[] };
+try{ const s=JSON.parse(localStorage.getItem("gm-my")||"null"); if(s){ MY.draft=Array.isArray(s.draft)?s.draft:[]; MY.saved=Array.isArray(s.saved)?s.saved:[]; } }catch(e){}
+function mySave(){ try{ localStorage.setItem("gm-my", JSON.stringify(MY)); }catch(e){} }
+const myKey = (d,i) => `${d}|${i.h}|${i.a}|${i.mk||"1X2"}|${i.side}`;
+// Seçimin güncel sonucu: yayındaki kupon geçmişinde aynı seçim aranır (ana kupon ya da alternatif)
+function myRes(p){
+  const c=COUPONS.find(x=>x.date===p.d); if(!c) return {};
+  const it=[...c.items,...(c.alts||[]).flat()].find(i=>myKey(c.date,i)===p.k);
+  return it ? {res:it.res, score:it.score} : {};
+}
+function myStatus(ps){
+  const rs=ps.map(p=>myRes(p).res);
+  if(rs.includes("L")) return "lost";
+  if(rs.every(r=>r==="W"||r==="V")) return rs.includes("W") ? "won" : "void";
+  return "pending";
+}
+function myRows(ps){
+  return ps.map(p=>{ const r=myRes(p), st=r.res||"P";
+    return `<div class="cp-drow ${st}"><span class="dm">${esc(T(p.h))} – ${esc(T(p.a))}${r.score?` <b>${esc(r.score)}</b>`:""}</span>
+      <span class="ds">${selTxt(p)} · ${dec(p.odds,2)}</span><span class="st ${st}">${t_("cpRes"+st)}</span></div>`; }).join("");
+}
+function myHTML(){
+  const prod=(ps,f)=>ps.reduce((s,i)=>s*f(i),1);
+  const d=MY.draft;
+  const draft = d.length ? `<div class="cp-dblk"><div class="bl">${t_("myDraft",{n:d.length})}</div>${d.map(p=>`<div class="cp-drow P"><span class="dm">${esc(T(p.h))} – ${esc(T(p.a))}</span>
+      <span class="ds">${selTxt(p)} · ${dec(p.odds,2)}</span><button type="button" class="x" data-myrm="${esc(p.k)}" aria-label="${t_("myDel")}">✕</button></div>`).join("")}</div>
+    <div class="cp-sum"><span>${t_("cpTotal")} <b>${dec(prod(d,i=>i.odds),2)}</b></span><span>${t_("cpAll")} <b>${pct(prod(d,i=>i.pc??i.p))}</b></span></div>
+    <div class="acts"><button type="button" class="sortbtn" data-my="save">${t_("mySave")}</button><button type="button" class="sortbtn" data-my="clear">${t_("myClear")}</button></div>`
+    : `<p class="cp-warn">${t_("myHint")}</p>`;
+  const saved = MY.saved.length ? `<div class="bl" style="margin-top:4px">${t_("mySaved")}</div><div class="cp-days" style="margin-top:0">${MY.saved.map(s=>{ const st=myStatus(s.picks), w=s.picks.filter(p=>myRes(p).res==="W").length;
+      return `<details class="cp-day"><summary><b>${esc(dday(s.d))}</b> · ${w}/${s.picks.length} · ${t_("cpTotal").toLowerCase()} ${dec(prod(s.picks,i=>i.odds),2)} · ${t_("cpSt_"+st)}</summary>
+        <div class="cp-dblk">${myRows(s.picks)}</div>
+        <p class="cp-warn" style="margin-top:6px">${t_("myMade",{d:dday(s.d)})} · <button type="button" class="x" data-mydel="${esc(s.id)}">${t_("myDel")}</button></p></details>`; }).join("")}</div>` : "";
+  return `<div class="my"><h3>${t_("myTitle")}</h3>${draft}${saved}<p class="cp-warn">${t_("myNote")}</p></div>`;
+}
 function renderCoupon(){
   const box=$("couponSec"); const c=COUPONS[0];
   const head = `<div class="head"><div><div class="eyebrow">${t_("cpEyebrow")}</div><h2>${t_("cpTitle")}</h2></div>${c?`<span class="muted">${esc(dday(c.date))}</span>`:""}</div>`;
@@ -1513,6 +1555,7 @@ function renderCoupon(){
       <div class="odd">${dec(i.odds,2)}</div>
       <div class="sel">${selTxt(i)}${st(i)} <span class="conf ${(i.pc??i.p)>=CP_HI_P?"hi":"mid"}" style="margin-left:4px">${t_((i.pc??i.p)>=CP_HI_P?"conf_hi":"conf_mid")}</span></div>
       <div class="nums">${t_("cpNums",{p:pct(i.p),q:pct(i.imp),c:pct(i.pc??(i.p+i.imp)/2)})}</div>
+      ${!i.res && Date.parse(i.iso)>Date.now() ? (()=>{ const k=myKey(c.date,i), on=MY.draft.some(x=>x.k===k); return `<button type="button" class="cp-add" data-k="${esc(k)}" data-v="${CP_VIEW}" aria-pressed="${on}">${t_(on?"myIn":"myAdd")}</button>`; })() : ""}
     </div>`).join("");
   const few = isMain && c.items.length && c.items.length<CP_SIZE ? `<p class="cp-warn">${t_("cpFew",{n:c.items.length,m:c.nMatches})}</p>` : "";
   const empty = !c.items.length ? `<p class="cp-warn">${t_("cpEmpty",{m:c.nMatches})}</p>` : "";
@@ -1524,7 +1567,7 @@ function renderCoupon(){
   const hist = COUPONS.length>1||done.length ? `<details class="cp-hist"><summary>${t_("cpHist")}</summary>
       <p style="margin:6px 0 0">${t_("cpHistSum",{c:done.length,w:done.filter(x=>x.status==="won").length,n:picks.length,h:picks.filter(i=>i.res==="W").length,p:picks.length?pct(picks.filter(i=>i.res==="W").length/picks.length):"–"})}</p>
       <div class="cp-days">${COUPONS.slice(0,30).map(x=>`<details class="cp-day"><summary><b>${esc(dday(x.date))}</b> · ${x.items.filter(i=>i.res==="W").length}/${x.items.length} · ${t_("cpSt_"+x.status)}${(x.alts||[]).length?" · "+t_("cpAltsHist",{t:(x.alts||[]).map(a=>`${a.filter(i=>i.res==="W").length}/${a.length}`).join(", ")}):""}</summary>${dayHTML(x,st)}</details>`).join("")}</div></details>` : "";
-  box.innerHTML = head+old+empty+nav+`<div class="cp-list">${rows}</div>`+few+sum+`<p class="cp-warn">${t_("cpWarn",{o:dec(CP_MIN_ODDS,2),p:pct(CP_MIN_P)})}</p>`+hist+learnHTML();
+  box.innerHTML = head+old+empty+nav+`<div class="cp-list">${rows}</div>`+few+sum+`<p class="cp-warn">${t_("cpWarn",{o:dec(CP_MIN_ODDS,2),p:pct(CP_MIN_P)})}</p>`+myHTML()+hist+learnHTML();
 }
 // ---- Öğrenme ----
 // Bugünün oranlı maçları için model ve piyasa tahminini kaydeder; sonuçlar gelince öğrenmede kullanılır
@@ -1606,7 +1649,23 @@ function learnHTML(){
     <p style="margin:6px 0 0">${t_("lnModel",{d:dday(Lr.date)})}</p>
     <p class="cp-warn" style="margin-top:6px">${t_("lnNote")}</p></details>`;
 }
-$("couponSec").addEventListener("click",e=>{ if(!e.target.closest("#cpAlt")) return; CP_VIEW++; renderCoupon(); });
+$("couponSec").addEventListener("click",e=>{
+  if(e.target.closest("#cpAlt")){ CP_VIEW++; renderCoupon(); return; }
+  const add=e.target.closest(".cp-add");
+  if(add){ const c=COUPONS[0]; if(!c) return; const views=[c.items,...altsOf(c)];
+    const i=(views[+add.dataset.v]||[]).find(x=>myKey(c.date,x)===add.dataset.k); if(!i) return;
+    const k=add.dataset.k, at=MY.draft.findIndex(x=>x.k===k);
+    if(at>=0) MY.draft.splice(at,1);
+    else { MY.draft=MY.draft.filter(x=>!(x.h===i.h&&x.a===i.a));   // her maçtan tek seçim
+      MY.draft.push({k,d:c.date,lg:i.lg,iso:i.iso,h:i.h,a:i.a,mk:i.mk||"1X2",side:i.side,odds:i.odds,p:i.p,pc:i.pc}); }
+    MY.draft.sort((a,b)=>Date.parse(a.iso)-Date.parse(b.iso)); mySave(); renderCoupon(); return; }
+  const rm=e.target.closest("[data-myrm]"); if(rm){ MY.draft=MY.draft.filter(x=>x.k!==rm.dataset.myrm); mySave(); renderCoupon(); return; }
+  const my=e.target.closest("[data-my]");
+  if(my){ if(my.dataset.my==="save" && MY.draft.length){ MY.saved.unshift({id:Date.now().toString(36), d:istDay.format(new Date()), picks:MY.draft}); MY.saved=MY.saved.slice(0,60); }
+    MY.draft=[]; mySave(); renderCoupon(); return; }
+  const del=e.target.closest("[data-mydel]");
+  if(del && confirm(t_("myDelQ"))){ MY.saved=MY.saved.filter(s=>s.id!==del.dataset.mydel); mySave(); renderCoupon(); }
+});
 window.GM = { ready:false, buildCoupon, learn, snapshot, MP, backtest, reset:()=>{ for(const k in RCACHE) delete RCACHE[k]; for(const k in BTCACHE) delete BTCACHE[k]; } };
 
 function absSrc(lg){
