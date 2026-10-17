@@ -61,6 +61,7 @@ if (coupon) {
   if (process.env.GITHUB_ACTIONS) {
     const txt = coupon.items.map(i => `${i.h}-${i.a}: ${i.mk === "OU" ? (i.side === "O" ? "2,5 Üst" : "2,5 Alt") : i.side === "1" ? i.h : i.a} @${i.odds} (%${Math.round(i.p * 100)})`).join(" | ");
     console.log(`::notice title=Günün kuponu (${coupon.items.length})::${txt || "Kriterlere uyan maç yok"}`);
+    console.log(`::notice title=Alternatif kuponlar::${(coupon.alts || []).length ? coupon.alts.map((a, k) => `Alternatif ${k + 1}: ${a.length} seçim`).join(" · ") : "yok"}`);
   }
 }
 writeFileSync(OUT, JSON.stringify(data));
