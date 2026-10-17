@@ -158,6 +158,16 @@ footer{font-size:12px;color:var(--muted)}
 .cp-warn{font-size:12px;color:var(--muted);margin:0}
 .cp-hist{font-size:13px}
 .cp-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cp-days{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+.cp-day{border:1px solid var(--line);border-radius:6px;padding:6px 10px}
+.cp-day summary{cursor:pointer;color:var(--ink);font-weight:400}
+.cp-day[open] summary{margin-bottom:6px}
+.cp-dblk{display:flex;flex-direction:column;gap:2px;margin-top:6px}
+.cp-drow{display:grid;grid-template-columns:1fr auto;gap:0 8px;align-items:center;padding:4px 0 4px 8px;border-left:3px solid var(--line)}
+.cp-drow.W{border-left-color:var(--win)}.cp-drow.L{border-left-color:var(--loss)}
+.cp-drow .dm{font-weight:600;min-width:0}
+.cp-drow .ds{grid-column:1;color:var(--muted);font-size:12px}
+.cp-drow .st{grid-column:2;grid-row:1/3;align-self:center}
 .cp-hist summary{cursor:pointer;color:var(--accent);font-weight:600}
 .cp-hist ul{margin:6px 0 0;padding-left:18px}
 .card .big{font-family:var(--display);font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
@@ -717,7 +727,7 @@ const I18N = {
     cpWarn:"Kriter: oran en az {o}, model en az piyasa kadar iyimser ve birleşik tahmin en az {p}. Birleşik tahmin %40 model, %60 bahis piyasasıdır; piyasa sakatlık ve kadro haberlerini bizden iyi yansıttığı için ağırlığı daha fazladır. Seçimler takım galibiyeti ya da 2,5 üst/alt olabilir, bir maçtan tek seçim alınır. Oranlar bahis şirketlerinin ortalamasıdır; oynayacağınız sitedeki oran farklı olabilir. Seçimlerin hepsinin birden tutma ihtimali düşüktür. Bu bir istatistik tahminidir, kazanç garantisi ya da bahis tavsiyesi değildir.",
     cpShowAlt:"Alternatif kupon göster", cpBackMain:"Ana kupona dön", cpMainLbl:"Ana kupon · en güçlü seçimler",
     cpAltLbl:"Alternatif {k}/{n} · sıralamada {a}-{b}. seçimler, aynı kriterler", cpNoAlt:"Aynı kriterlere uyan başka seçim olmadığı için alternatif kupon yok.",
-    cpAltsHist:"alternatifler {t}",
+    cpAltsHist:"alternatifler {t}", cpAltN:"Alternatif {k}",
     lnTitle:"Model nasıl öğreniyor?", lnYday:"Dünün kuponları:", lnYMain:"ana kupon {w}/{n} tuttu", lnYAlt:"alternatif {k}: {w}/{n}", lnYNone:"dün kupon yoktu.",
     lnMkt:"Piyasa payı şu an {p}; {n} sonuçlanmış maçta modelle piyasanın hangi karışımının daha iyi tahmin ettiğine bakılarak ayarlanıyor.",
     lnMktWait:"Piyasa payı şimdilik {p}. Ayarlamak için en az {m} sonuçlanmış maç gerekiyor, şu an {n}.",
@@ -790,7 +800,7 @@ const I18N = {
     cpWarn:"Criteria: odds of at least {o}, the model at least as optimistic as the market, and a combined estimate of at least {p}. The combined estimate is 40% model and 60% betting market; the market gets more weight because it reflects injury and squad news better than we do. Picks can be a team win or over/under 2.5 goals, with one pick per match. Odds are the bookmakers' average; the odds on the site you use may differ. The chance of all picks winning together is low. This is a statistical estimate, not a guarantee of winnings or betting advice.",
     cpShowAlt:"Show alternative coupon", cpBackMain:"Back to main coupon", cpMainLbl:"Main coupon · strongest picks",
     cpAltLbl:"Alternative {k}/{n} · picks ranked {a}-{b}, same criteria", cpNoAlt:"No alternative coupon: no other picks meet the same criteria.",
-    cpAltsHist:"alternatives {t}",
+    cpAltsHist:"alternatives {t}", cpAltN:"Alternative {k}",
     lnTitle:"How does the model learn?", lnYday:"Yesterday's coupons:", lnYMain:"main coupon {w}/{n} came in", lnYAlt:"alternative {k}: {w}/{n}", lnYNone:"there was no coupon yesterday.",
     lnMkt:"Market share is now {p}; it is adjusted by checking which mix of model and market predicted {n} settled matches better.",
     lnMktWait:"Market share is {p} for now. At least {m} settled matches are needed to adjust it; there are {n}.",
@@ -1475,6 +1485,13 @@ function selTxt(i){
   if(i.mk==="OU") return `${t_(i.side==="O"?"cpOver":"cpUnder")} <span class="muted">(${t_(i.side==="O"?"over25":"under25")})</span>`;
   return `${esc(t_("wins",{t:T(i.side==="1"?i.h:i.a)}))} <span class="muted">(${i.side})</span>`;
 }
+// Karnede bir günün kuponu: ana kupon ve alternatifler, her seçimin sonucu ve skoru
+function dayHTML(x,st){
+  const block=(title,list)=>!list.length?"":`<div class="cp-dblk"><div class="bl">${title}</div>${list.map(i=>`<div class="cp-drow ${i.res||"P"}">
+      <span class="dm">${esc(T(i.h))} – ${esc(T(i.a))}${i.score?` <b>${esc(i.score)}</b>`:""}</span>
+      <span class="ds">${selTxt(i)} · ${dec(i.odds,2)}</span><span class="st ${i.res||"P"}">${t_("cpRes"+(i.res||"P"))}</span></div>`).join("")}</div>`;
+  return block(t_("cpMainLbl"),x.items)+(x.alts||[]).map((a,k)=>block(t_("cpAltN",{k:k+1}),a)).join("") || `<p class="cp-warn">${t_("cpSt_empty")}</p>`;
+}
 function renderCoupon(){
   const box=$("couponSec"); const c=COUPONS[0];
   const head = `<div class="head"><div><div class="eyebrow">${t_("cpEyebrow")}</div><h2>${t_("cpTitle")}</h2></div>${c?`<span class="muted">${esc(dday(c.date))}</span>`:""}</div>`;
@@ -1506,7 +1523,7 @@ function renderCoupon(){
   const picks=COUPONS.flatMap(x=>x.items).filter(i=>i.res==="W"||i.res==="L");
   const hist = COUPONS.length>1||done.length ? `<details class="cp-hist"><summary>${t_("cpHist")}</summary>
       <p style="margin:6px 0 0">${t_("cpHistSum",{c:done.length,w:done.filter(x=>x.status==="won").length,n:picks.length,h:picks.filter(i=>i.res==="W").length,p:picks.length?pct(picks.filter(i=>i.res==="W").length/picks.length):"–"})}</p>
-      <ul>${COUPONS.slice(0,10).map(x=>`<li>${esc(dday(x.date))} · ${x.items.length} ${t_("cpPicks")} · ${x.items.filter(i=>i.res==="W").length}/${x.items.length} · ${t_("cpSt_"+x.status)}${(x.alts||[]).length?" · "+t_("cpAltsHist",{t:(x.alts||[]).map(a=>`${a.filter(i=>i.res==="W").length}/${a.length}`).join(", ")}):""}</li>`).join("")}</ul></details>` : "";
+      <div class="cp-days">${COUPONS.slice(0,30).map(x=>`<details class="cp-day"><summary><b>${esc(dday(x.date))}</b> · ${x.items.filter(i=>i.res==="W").length}/${x.items.length} · ${t_("cpSt_"+x.status)}${(x.alts||[]).length?" · "+t_("cpAltsHist",{t:(x.alts||[]).map(a=>`${a.filter(i=>i.res==="W").length}/${a.length}`).join(", ")}):""}</summary>${dayHTML(x,st)}</details>`).join("")}</div></details>` : "";
   box.innerHTML = head+old+empty+nav+`<div class="cp-list">${rows}</div>`+few+sum+`<p class="cp-warn">${t_("cpWarn",{o:dec(CP_MIN_ODDS,2),p:pct(CP_MIN_P)})}</p>`+hist+learnHTML();
 }
 // ---- Öğrenme ----
