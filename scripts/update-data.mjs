@@ -50,6 +50,7 @@ const ALIASES = {
   // Eksik oyuncu listelerindeki kısa adlar
   "Man City": "Manchester City",
   "Man United": "Manchester United",
+  "Nott'm Forest": "Nottingham Forest",
   "Bayern Munich": "Bayern Münih",
   "Bayern München": "Bayern Münih",
   "Inter Milan": "Inter",
