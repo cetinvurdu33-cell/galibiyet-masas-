@@ -721,7 +721,7 @@ const I18N = {
     pick:"Tahmin:", halfPick:"Daha gollü yarı:", conf_hi:"Yüksek güven", conf_mid:"Orta güven", conf_lo:"Düşük güven",
     mktLine:"Model {a} · bahis piyasası {b} · tahmin ikisinin karışımı",
     h2hTitle:"Son 10 yılda aralarındaki maçlar ({n})", h2hShort:"Son 10 yılda {n} maç:", h2hAvg:"Maç başı gol", h2hNone:"Son 10 yılda aralarında lig maçı yok.", likelyScore:"En olası skor", over15:"1,5 üst", over25:"2,5 üst", over35:"3,5 üst", btts:"KG var", dcLbl:"Çifte şans",
-    fW:"G", fD:"B", fL:"M", deepTitle:"Derin analiz", cTitle:"Takım karşılaştırması (bu sezon, maç başına)", cShots:"Şut (atılan / yenen)", cSot:"İsabetli şut (atılan / yenen)", cXg:"Pozisyona göre gol beklentisi", cGoals:"Gerçek gol (atılan / yenen)", cLuck:"Şans payı", cMkt:"Piyasa gücü (gol farkı)", cRest:"Son maçtan beri", cDays:"{n} gün", cBetter:"Karşılaştırmada önde: {t} ({k}/{n} ölçü)", cEven:"Karşılaştırmada denge var", cNote:"Kendi liglerindeki maçlardan (en çok {n} maç). Yeşil, o ölçüde daha iyi olan taraftır. Şans payı artıdaysa takım, pozisyonlarının gösterdiğinden fazla gol farkı yakalamış demektir; bu genelde sürmez. Piyasa gücü, oynadığı maçların kapanış oranlarına göre ortalama bir rakibe karşı beklenen gol farkıdır.", dAtt:"Hücum gücü", dDef:"Savunma (düşük iyi)", dXg:"Beklenen gol", dForm:"Son 5 maç", dHome:"İç saha G-B-M", dAway:"Deplasman G-B-M",
+    fW:"G", fD:"B", fL:"M", deepTitle:"Derin analiz", cTitle:"Takım karşılaştırması (bu sezon, maç başına)", cShots:"Şut (atılan / yenen)", cSot:"İsabetli şut (atılan / yenen)", cXg:"Pozisyona göre gol beklentisi", cGoals:"Gerçek gol (atılan / yenen)", cLuck:"Şans payı", cMkt:"Piyasa gücü (gol farkı)", cRest:"Son maçtan beri", cNext:"Sonraki maça", cCong:"Yoğun fikstür, rotasyon riski: {t} ({w}).", cWhyRest:"{n} gün önce oynadı", cWhyNext:"{n} gün sonra {l} maçı var", cCongM:"Model bu takımın gol beklentisini %{p} düşürdü.", cDays:"{n} gün", cBetter:"Karşılaştırmada önde: {t} ({k}/{n} ölçü)", cEven:"Karşılaştırmada denge var", cNote:"Kendi liglerindeki maçlardan (en çok {n} maç). Yeşil, o ölçüde daha iyi olan taraftır. Şans payı artıdaysa takım, pozisyonlarının gösterdiğinden fazla gol farkı yakalamış demektir; bu genelde sürmez. Piyasa gücü, oynadığı maçların kapanış oranlarına göre ortalama bir rakibe karşı beklenen gol farkıdır.", dAtt:"Hücum gücü", dDef:"Savunma (düşük iyi)", dXg:"Beklenen gol", dForm:"Son 5 maç", dHome:"İç saha G-B-M", dAway:"Deplasman G-B-M",
     deepNote:"Hücum ve savunma gücü lig ortalamasına göredir: ×1,20 hücum, ortalama bir takımdan %20 fazla gol demektir. Savunmada ×0,80, ortalamadan %20 az gol yemek demektir.",
     cpEyebrow:"Her sabah 09:00 civarı", cpTitle:"Günün kuponu",
     cpNone:"Oran verisi bağlandığında burada her sabah, önümüzdeki 36 saatin maçlarından en fazla 6 seçimlik bir kupon çıkacak.",
@@ -794,7 +794,7 @@ const I18N = {
     pick:"Prediction:", halfPick:"Half with more goals:", conf_hi:"High confidence", conf_mid:"Medium confidence", conf_lo:"Low confidence",
     mktLine:"Model {a} · betting market {b} · prediction blends both",
     h2hTitle:"Meetings in the last 10 years ({n})", h2hShort:"Last 10 years, {n} meetings:", h2hAvg:"Goals per match", h2hNone:"No league meetings between them in the last 10 years.", likelyScore:"Most likely score", over15:"Over 1.5", over25:"Over 2.5", over35:"Over 3.5", btts:"Both score", dcLbl:"Double chance",
-    fW:"W", fD:"D", fL:"L", deepTitle:"Deep analysis", cTitle:"Team comparison (this season, per match)", cShots:"Shots (for / against)", cSot:"Shots on target (for / against)", cXg:"Expected goals from chances", cGoals:"Actual goals (for / against)", cLuck:"Luck factor", cMkt:"Market strength (goal diff.)", cRest:"Days since last match", cDays:"{n} days", cBetter:"Ahead in the comparison: {t} ({k}/{n} measures)", cEven:"The comparison is balanced", cNote:"From matches in their own league (up to {n} matches). Green marks the side that is better on that measure. A positive luck factor means the team has a better goal difference than its chances suggest, which usually does not last. Market strength is the expected goal difference against an average opponent, based on the closing odds of its matches.", dAtt:"Attack rating", dDef:"Defence (lower is better)", dXg:"Expected goals", dForm:"Last 5", dHome:"Home W-D-L", dAway:"Away W-D-L",
+    fW:"W", fD:"D", fL:"L", deepTitle:"Deep analysis", cTitle:"Team comparison (this season, per match)", cShots:"Shots (for / against)", cSot:"Shots on target (for / against)", cXg:"Expected goals from chances", cGoals:"Actual goals (for / against)", cLuck:"Luck factor", cMkt:"Market strength (goal diff.)", cRest:"Days since last match", cNext:"Days to next match", cCong:"Congested schedule, rotation risk: {t} ({w}).", cWhyRest:"played {n} days ago", cWhyNext:"{l} match in {n} days", cCongM:"The model lowered this team's expected goals by {p}%.", cDays:"{n} days", cBetter:"Ahead in the comparison: {t} ({k}/{n} measures)", cEven:"The comparison is balanced", cNote:"From matches in their own league (up to {n} matches). Green marks the side that is better on that measure. A positive luck factor means the team has a better goal difference than its chances suggest, which usually does not last. Market strength is the expected goal difference against an average opponent, based on the closing odds of its matches.", dAtt:"Attack rating", dDef:"Defence (lower is better)", dXg:"Expected goals", dForm:"Last 5", dHome:"Home W-D-L", dAway:"Away W-D-L",
     deepNote:"Attack and defence ratings are relative to the league average: ×1.20 attack means 20% more goals than an average team. ×0.80 defence means conceding 20% fewer goals than average.",
     cpEyebrow:"Every morning around 09:00", cpTitle:"Coupon of the day",
     cpNone:"Once odds data is connected, a coupon of up to 6 picks from the next 36 hours' matches will appear here every morning.",
@@ -1116,6 +1116,7 @@ const MP = {
   shrink: 0,     // sonuç olasılıklarını lig ortalamasına çekme payı (aşırı özgüveni azaltır)
   // Takım gücü yalnızca golden değil: maçtaki isabetli şutlardan çıkan gol beklentisi (wS) ve
   // maçın kapanış oranlarından çıkan gol beklentisi (wM) de katılır; kalan pay gerçek goldür.
+  rot: 0,       // yoğun fikstür etkisi (her yorgunluk/rotasyon puanı için gol beklentisinde değişim payı)
   wS: 0.45, wM: 0.3,   // 381 maçlık geriye dönük testte en iyi birleşim (22 Ekim 2026)
 };
 const RCACHE = {};
@@ -1215,6 +1216,9 @@ function matchModel(lg,home,away,iso,neutral,opt={}){
   const ih=opt.noAbs?{list:[],att:1,def:1,attLoss:0,defLoss:0}:impact(home,lg,iso), ia=opt.noAbs?{list:[],att:1,def:1,attLoss:0,defLoss:0}:impact(away,lg,iso);
   const muH = neutral ? r.mu/2 : r.muH, muA = neutral ? r.mu/2 : r.muA;
   let lh = muH*ah*da*ih.att*ia.def, la = muA*aa*dh*ia.att*ih.def;
+  // Yoğun fikstür: yorgun ya da rotasyon yapacak takım daha az atar, daha çok yer
+  const ch = MP.rot>0 && !neutral ? congestion(home,iso,lg) : {c:0}, ca = MP.rot>0 && !neutral ? congestion(away,iso,lg) : {c:0};
+  if(ch.c||ca.c){ lh*=(1-MP.rot*ch.c)*(1+MP.rot*ca.c); la*=(1-MP.rot*ca.c)*(1+MP.rot*ch.c); }
   // Son 10 yılda aralarındaki maçlar: her takımın bu rakibe karşı attığı gol, yakın tarihli maçlar daha ağır
   const hh = opt.noAbs ? null : h2hOf(home,away);
   if(hh && hh.n){ const base=r.mu/2, K=MP.h2hK, cap=MP.h2hCap;
@@ -1232,7 +1236,7 @@ function matchModel(lg,home,away,iso,neutral,opt={}){
   const top = Math.max(g.p1,g.px,g.p2);
   const conf = top>=0.55?"hi":top>=0.45?"mid":"lo";
   const dc = g.p1+g.px >= g.px+g.p2 ? {k:"1X",p:g.p1+g.px} : {k:"X2",p:g.px+g.p2};
-  return {...g,lh,la,tot:lh+la,ih,ia,hs:r.hs,best,top,conf,dc,rh:{a:ah,d:dh},ra:{a:aa,d:da},raw,mk,hh};
+  return {...g,lh,la,tot:lh+la,ih,ia,hs:r.hs,best,top,conf,dc,rh:{a:ah,d:dh},ra:{a:aa,d:da},raw,mk,hh,ch,ca};
 }
 // ---- Aralarındaki maçlar (son 10 yıl) ----
 const H2H = {};   // "Ev|Dep" → [{d,h,a,hg,ag}]
@@ -1316,10 +1320,30 @@ function teamStats(team){
   const d=(a,b)=>b?a/b:null;
   return {lg,n, sf:d(z.sf,z.ns), sa:d(z.sa,z.ns), tf:d(z.tf,z.ns), ta:d(z.ta,z.ns), xf:d(z.xf,z.nx), xa:d(z.xa,z.nx), gf:d(z.gf,z.nx), ga:d(z.ga,z.nx), mk};
 }
-function restDays(team,iso){
-  const t=Date.parse(iso); let last=null;
-  Object.values(RESULTS).forEach(ms=>ms.forEach(m=>{ if((m.h===team||m.a===team)&&m.d<t-3600e3&&(last==null||m.d>last)) last=m.d; }));
-  return last==null ? null : Math.floor((t-last)/864e5);
+// ---- Fikstür yoğunluğu ve rotasyon ----
+// Takımın bütün maç tarihleri (lig + Şampiyonlar Ligi; oynanmış ve fikstürdeki)
+let TEAM_DATES = null;
+function teamDates(){
+  if(TEAM_DATES) return TEAM_DATES;
+  const T={}, add=(team,d,lg)=>{ (T[team] ??= []).push({d,lg}); };
+  Object.entries(RESULTS).forEach(([lg,ms])=>ms.forEach(m=>{ add(m.h,m.d,lg); add(m.a,m.d,lg); }));
+  Object.entries(FIXTURES).forEach(([lg,src])=>(src||"").split("\n").filter(Boolean).forEach(r=>{ const [iso,h,a]=r.split("|"); const d=Date.parse(iso); if(d>Date.now()-2*3600e3){ add(h,d,lg); add(a,d,lg); } }));
+  Object.values(T).forEach(l=>l.sort((x,y)=>x.d-y.d));
+  return TEAM_DATES=T;
+}
+// Önceki maçtan bu yana ve sonraki maça kalan gün; sonraki maç başka bir turnuvadaysa (ör. Şampiyonlar Ligi) belirtilir
+function gaps(team,iso,lg){
+  const t=Date.parse(iso), l=teamDates()[team]||[]; let prev=null, next=null;
+  for(const x of l){ if(x.d<t-6*3600e3) prev=x; else if(x.d>t+6*3600e3){ next=x; break; } }
+  return { rest: prev?Math.floor((t-prev.d)/864e5):null, next: next?Math.floor((next.d-t)/864e5):null, nextLg: next?.lg||null, other: !!next && next.lg==="Şampiyonlar Ligi" && lg!=="Şampiyonlar Ligi" };
+}
+const restDays = (team,iso) => gaps(team,iso).rest;
+// Yorgunluk ve rotasyon riski: 3 günden kısa dinlenme ve 3 gün içinde başka turnuvada maç; her biri bir puan
+function congestion(team,iso,lg){
+  const g=gaps(team,iso,lg); let c=0, why=[];
+  if(g.rest!=null&&g.rest<=3){ c++; why.push("rest"); }
+  if(g.next!=null&&g.next<=3&&g.other){ c++; why.push("next"); }
+  return {c,why,g};
 }
 function cmpHTML(h,a,iso){
   const A=teamStats(h), B=teamStats(a); if(!A&&!B) return "";
@@ -1338,12 +1362,17 @@ function cmpHTML(h,a,iso){
     const luck=X=>X&&X.gf!=null?(X.gf-X.xf)-(X.ga-X.xa):null;
     rows.push(`<span class="lab">${t_("cLuck")}</span><span>${sg(luck(A))}</span><span>${sg(luck(B))}</span>`); }
   if(g(A,"mk")!=null||g(B,"mk")!=null) row(t_("cMkt"), g(A,"mk"), g(B,"mk"), x=>sg(x?g(A,"mk"):g(B,"mk")), 0.1);
-  const rh=restDays(h,iso), ra=restDays(a,iso);
+  const lgOf=team=>Object.keys(RESULTS).find(l=>l!=="Şampiyonlar Ligi"&&RESULTS[l].some(m=>m.h===team||m.a===team));
+  const GH=congestion(h,iso,lgOf(h)), GA=congestion(a,iso,lgOf(a)), rh=GH.g.rest, ra=GA.g.rest;
   if(rh!=null||ra!=null) row(t_("cRest"), rh, ra, x=>{const v=x?rh:ra; return v==null?"–":t_("cDays",{n:v});}, 1);
+  const nx=G=>G.g.next==null?"–":t_("cDays",{n:G.g.next})+(G.g.other?` (${L(G.g.nextLg)})`:"");
+  if(GH.g.next!=null||GA.g.next!=null) rows.push(`<span class="lab">${t_("cNext")}</span><span>${nx(GH)}</span><span>${nx(GA)}</span>`);
+  const warn=[[h,GH],[a,GA]].filter(([,G])=>G.c).map(([tm,G])=>t_("cCong",{t:T(tm),w:G.why.map(w=>w==="rest"?t_("cWhyRest",{n:G.g.rest}):t_("cWhyNext",{n:G.g.next,l:L(G.g.nextLg)})).join(", ")}));
   const who = score.n ? (score.h>score.a ? t_("cBetter",{t:T(h),k:score.h,n:score.n}) : score.a>score.h ? t_("cBetter",{t:T(a),k:score.a,n:score.n}) : t_("cEven")) : "";
   return `<div style="margin-top:10px"><div class="bl" style="margin:0">${t_("cTitle")}</div>
     <div class="grid"><span class="lab"></span><span class="tn">${esc(T(h))}</span><span class="tn">${esc(T(a))}</span>${rows.join("")}</div>
     ${who?`<p style="margin:6px 0 0"><b>${esc(who)}</b></p>`:""}
+    ${warn.map(w=>`<p style="margin:4px 0 0;color:var(--loss)">${esc(w)}${MP.rot>0?" "+t_("cCongM",{p:Math.round(MP.rot*100)}):""}</p>`).join("")}
     <p class="muted" style="margin:4px 0 0">${t_("cNote",{n:Math.max(A?.n||0,B?.n||0)})}</p></div>`;
 }
 function deepHTML(lg,h,a,m,f1,iso){
@@ -1515,6 +1544,7 @@ function applyData(j){
     LEAGUES[lg]=Object.entries(tb).map(([n,v])=>[n,...v].join("|")).join("\n");
   });
   Object.keys(STATS).forEach(attachStats);
+  TEAM_DATES = null;
   ABS_SRC = j.status?.absences || {};
   build();
   for(const k in RCACHE) delete RCACHE[k]; for(const k in BTCACHE) delete BTCACHE[k];
@@ -1707,7 +1737,7 @@ function learn(){
   const lgs=Object.keys(RESULTS).filter(lg=>(RESULTS[lg]||[]).length>=30);
   const score=()=>{ for(const k in RCACHE) delete RCACHE[k]; for(const k in BTCACHE) delete BTCACHE[k];
     let n=0,ll=0; lgs.forEach(lg=>{ const r=backtest(lg); if(r.n){ n+=r.n; ll+=(r.ll+r.llOU)*r.n; } }); return n?ll/n:null; };   // maç sonucu + 2,5 Üst/Alt hatası
-  const keys={wS:[0,0.15,0.3,0.45,0.6,0.75],wM:[0,0.15,0.3,0.45,0.6],half:[30,45,60,90],prior:[8,12,16],newA:[0.7,0.75,0.85],newD:[1.0,1.05,1.15]};
+  const keys={rot:[0,0.03,0.06,0.09],wS:[0,0.15,0.3,0.45,0.6,0.75],wM:[0,0.15,0.3,0.45,0.6],half:[30,45,60,90],prior:[8,12,16],newA:[0.7,0.75,0.85],newD:[1.0,1.05,1.15]};
   const start={...MP}; const base=score(); let cur=base, mp={};
   if(base!=null){
     for(const [k,vals] of Object.entries(keys)){ let bestV=MP[k];
@@ -1770,8 +1800,15 @@ function evalWeights(){
     MP.wS=wS; MP.wM=wM; for(const k in RCACHE) delete RCACHE[k]; for(const k in BTCACHE) delete BTCACHE[k];
     let n=0,ll=0,ou=0,hit=0; lgs.forEach(lg=>{ const r=backtest(lg); if(r.n){ n+=r.n; ll+=r.ll*r.n; ou+=r.llOU*r.n; hit+=r.hit; } });
     out.push({wS,wM,n,ll:+(ll/n).toFixed(4),ou:+(ou/n).toFixed(4),hit:+(hit/n).toFixed(3)}); }
-  Object.assign(MP,keep); for(const k in RCACHE) delete RCACHE[k]; for(const k in BTCACHE) delete BTCACHE[k];
-  return {cov,out};
+  Object.assign(MP,keep);
+  const rot=[], keepR=MP.rot;
+  for(const v of [0,0.03,0.06,0.09,0.12]){ MP.rot=v; for(const k in BTCACHE) delete BTCACHE[k];
+    let n=0,ll=0,ou=0,hit=0; lgs.forEach(lg=>{ const r=backtest(lg); if(r.n){ n+=r.n; ll+=r.ll*r.n; ou+=r.llOU*r.n; hit+=r.hit; } });
+    rot.push({rot:v,n,ll:+(ll/n).toFixed(4),ou:+(ou/n).toFixed(4),hit:+(hit/n).toFixed(3)}); }
+  MP.rot=keepR;
+  let nC=0; lgs.forEach(lg=>RESULTS[lg].forEach(m=>{ const iso=new Date(m.d).toISOString(); if(congestion(m.h,iso,lg).c||congestion(m.a,iso,lg).c) nC++; }));
+  for(const k in RCACHE) delete RCACHE[k]; for(const k in BTCACHE) delete BTCACHE[k];
+  return {cov,out,rot,nC};
 }
 window.GM = { ready:false, buildCoupon, learn, snapshot, MP, backtest, evalWeights, reset:()=>{ for(const k in RCACHE) delete RCACHE[k]; for(const k in BTCACHE) delete BTCACHE[k]; } };
 
