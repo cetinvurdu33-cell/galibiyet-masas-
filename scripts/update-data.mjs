@@ -508,9 +508,16 @@ async function fetchCups(allKnown, status) {
       let j;
       if (process.env.FD_MOCK_DIR) { const f = join(process.env.FD_MOCK_DIR, `ESPN-${slug}.json`); if (!existsSync(f)) continue; j = JSON.parse(readFileSync(f, "utf8")); }
       else {
-        const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/${slug}/scoreboard?dates=${ymd(from)}-${ymd(to)}&limit=1000`);
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        j = await res.json();
+        // haftalık parçalar halinde (uzun aralıkları servis reddediyor)
+        j = { events: [] }; const seen = new Set(); let fails = 0, lastErr = "";
+        for (let t = from.getTime(); t <= to.getTime(); t += 7 * 864e5) {
+          const a = new Date(t), b = new Date(Math.min(t + 6 * 864e5, to.getTime()));
+          const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/${slug}/scoreboard?dates=${ymd(a)}-${ymd(b)}`);
+          if (!res.ok) { fails++; lastErr = `HTTP ${res.status} ${(await res.text()).slice(0, 80)}`; continue; }
+          for (const e of (await res.json()).events || []) if (!seen.has(e.id)) { seen.add(e.id); j.events.push(e); }
+          await sleep(300);
+        }
+        if (!j.events.length && fails) throw new Error(lastErr);
       }
       const evs = (j.events || []).map(e => {
         const c = e.competitions?.[0] || {}, hm = (c.competitors || []).find(x => x.homeAway === "home"), aw = (c.competitors || []).find(x => x.homeAway === "away");
