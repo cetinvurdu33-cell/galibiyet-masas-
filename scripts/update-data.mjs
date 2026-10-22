@@ -336,6 +336,7 @@ const ODDS_SPORTS = {
   "Premier League": "soccer_epl", "La Liga": "soccer_spain_la_liga", "Serie A": "soccer_italy_serie_a",
   "Bundesliga": "soccer_germany_bundesliga", "Ligue 1": "soccer_france_ligue_one",
   "Şampiyonlar Ligi": "soccer_uefa_champs_league", "Süper Lig": "soccer_turkey_super_league",
+  "Avrupa Ligi": "soccer_uefa_europa_league", "Konferans Ligi": "soccer_uefa_europa_conference_league",
 };
 const istDate = d => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul" }).format(d);
 const istHour = d => +new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Istanbul", hour: "2-digit", hour12: false }).format(d);
@@ -495,6 +496,47 @@ async function buildStats(known, status) {
   return { built: now.toISOString(), season: code, info, leagues: out };
 }
 
+// ---------- Avrupa Ligi ve Konferans Ligi (ESPN'in herkese açık skor servisi) ----------
+const CUPS = { "Avrupa Ligi": "uefa.europa", "Konferans Ligi": "uefa.europa.conf" };
+const ymd = d => d.toISOString().slice(0, 10).replace(/-/g, "");
+/** Bu sezonun lig aşaması sonuçları, puan tablosu ve önümüzdeki 10 günün fikstürü */
+async function fetchCups(allKnown, status) {
+  const out = {}, now = new Date(), y = now.getUTCFullYear(), s0 = now.getUTCMonth() >= 6 ? y : y - 1;
+  const from = new Date(Date.UTC(s0, 8, 1)), to = new Date(now.getTime() + FIXTURE_DAYS * 864e5);
+  for (const [lg, slug] of Object.entries(CUPS)) {
+    try {
+      let j;
+      if (process.env.FD_MOCK_DIR) { const f = join(process.env.FD_MOCK_DIR, `ESPN-${slug}.json`); if (!existsSync(f)) continue; j = JSON.parse(readFileSync(f, "utf8")); }
+      else {
+        const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/${slug}/scoreboard?dates=${ymd(from)}-${ymd(to)}&limit=1000`);
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        j = await res.json();
+      }
+      const evs = (j.events || []).map(e => {
+        const c = e.competitions?.[0] || {}, hm = (c.competitors || []).find(x => x.homeAway === "home"), aw = (c.competitors || []).find(x => x.homeAway === "away");
+        if (!hm || !aw) return null;
+        const st = c.status?.type || e.status?.type || {};
+        return { iso: new Date(e.date).toISOString(), h: hm.team?.displayName, a: aw.team?.displayName, hg: +hm.score, ag: +aw.score, done: !!st.completed, state: st.state };
+      }).filter(e => e && e.h && e.a);
+      const teams = new Map(); evs.forEach(e => { teams.set(e.h, { id: e.h, name: e.h }); teams.set(e.a, { id: e.a, name: e.a }); });
+      const names = buildNameMap([...teams.values()], allKnown);
+      const R = evs.filter(e => e.done && Number.isFinite(e.hg) && Number.isFinite(e.ag)).sort((a, b) => a.iso.localeCompare(b.iso));
+      const F = evs.filter(e => !e.done && e.state === "pre" && Date.parse(e.iso) > now.getTime()).sort((a, b) => a.iso.localeCompare(b.iso));
+      const tb = new Map(); [...teams.keys()].forEach(n => tb.set(names.get(n), [0, 0, 0, 0, 0]));
+      R.forEach(e => { const H = tb.get(names.get(e.h)), A = tb.get(names.get(e.a));
+        const r = e.hg > e.ag ? [0, 2] : e.hg < e.ag ? [2, 0] : [1, 1]; H[r[0]]++; A[r[1]]++; H[3] += e.hg; H[4] += e.ag; A[3] += e.ag; A[4] += e.hg; });
+      const pts = v => v[0] * 3 + v[1];
+      const table = [...tb.entries()].sort((x, y) => pts(y[1]) - pts(x[1]) || (y[1][3] - y[1][4]) - (x[1][3] - x[1][4]) || y[1][3] - x[1][3]).map(([n, v]) => [n, ...v].join("|")).join("\n");
+      let hg = 0, ag = 0; R.forEach(e => { hg += e.hg; ag += e.ag; });
+      out[lg] = { table, fixtures: F.map(e => `${e.iso}|${names.get(e.h)}|${names.get(e.a)}`).join("\n"),
+        results: R.map(e => `${e.iso}|${names.get(e.h)}|${names.get(e.a)}|${e.hg}|${e.ag}`).join("\n"), home: { hg, ag, n: R.length }, names: [...new Set(names.values())] };
+      console.log(`✓ ${lg}: ${tb.size} takım, ${R.length} maç, ${F.length} yaklaşan maç`);
+      status.cups = { ...(status.cups || {}), [lg]: `${tb.size} takım, ${R.length} sonuç, ${F.length} fikstür` };
+    } catch (e) { console.warn(`✗ ${lg}: ${e.message}`); status.cups = { ...(status.cups || {}), [lg]: "hata: " + e.message.slice(0, 80) }; }
+  }
+  return out;
+}
+
 /** Önceki yayındaki data.json (oranlar ve kupon geçmişi buradan devralınır) */
 async function getPrev() {
   try {
@@ -592,6 +634,11 @@ async function main() {
     console.error("Hiçbir lig güncellenemedi; önceki yayın olduğu gibi kalacak.");
     process.exit(1);
   }
+  // Avrupa Ligi ve Konferans Ligi: sonuçlar, tablo ve fikstür; oran eşleştirmesi için takım adları
+  for (const [lg, v] of Object.entries(await fetchCups(allKnown, status))) {
+    const { names, ...rest } = v; leagues[lg] = rest;
+    known[lg] = [...new Set([...allKnown, ...names])];
+  }
 
   // Eksik oyuncular: önce API-Football, alınamayan ligler için yedek liste
   const absences = [];
@@ -688,6 +735,7 @@ async function main() {
     console.log(`::notice title=Eksik oyuncular::${absTxt}`);
     if (h2h) console.log(`::notice title=Aralarındaki maçlar::${Object.keys(h2h.pairs).length} eşleşme, ${Object.values(h2h.pairs).filter(Boolean).length} tanesinde geçmiş maç var${status.h2hMissing ? ` · alınamayan sezonlar: ${status.h2hMissing.join(", ")}` : ""}`);
     if (odds) console.log(`::notice title=Oranlar::${istDate(new Date(odds.fetched))} · ${Object.entries(odds.leagues).map(([k, v]) => `${k} ${v ? v.split("\n").length : 0}`).join(", ")} · kalan kredi ${status.oddsRemaining ?? "?"}${needCoupon ? " · yeni kupon hazırlanacak" : ""}`);
+    if (status.cups) console.log(`::notice title=Avrupa kupaları::${Object.entries(status.cups).map(([k, v]) => `${k}: ${v}`).join(" · ")}`);
     if (stats) console.log(`::notice title=Maç istatistikleri (${stats.season})::${stats.info.join(" · ")}`);
     if (errors.length) console.log(`::warning title=Alınamayan veriler::${errors.join(" | ").slice(0, 900)}`);
     // Elle başlatılan çalışmada istenirse maç sonuçlarını da yaz (model kontrolü için)

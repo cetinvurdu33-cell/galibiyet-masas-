@@ -47,6 +47,7 @@ try {
     if (base) console.log(`::notice title=Değerlendirme: eski model::yalnızca gol: sonuç ${base.ll} üst/alt ${base.ou} isabet ${base.hit} (${base.n} maç)`);
     console.log(`::notice title=Değerlendirme: tümü::${ev.out.map(r => `${r.wS}/${r.wM}:${r.ll}/${r.ou}`).join(" ")}`);
     console.log(`::notice title=Değerlendirme: yoğun fikstür::${ev.nC} maçta en az bir takım yoğun fikstürde · ${ev.rot.map(r => `etki ${r.rot}: sonuç ${r.ll} üst/alt ${r.ou} isabet ${r.hit}`).join(" | ")}`);
+    console.log(`::notice title=Değerlendirme: Avrupa kupaları::${ev.cups.join(" · ")}`);
     if (!data.needCoupon) { await browser.close(); server.close(); process.exit(0); }
   }
   // Önce dünkü sonuçlardan öğren, sonra bugünün tahminlerini kaydet ve kuponu kur

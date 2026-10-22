@@ -823,7 +823,7 @@ const I18N = {
     noteAuto:"{l} data updated automatically on {w} (matches and goals: football-data.org{sl}).", noteSL:", Süper Lig: API-Football",
     noteManual:" {l} data is from {d}.", noteAbs:" Injured and suspended players: {x}.", noteAbsPart:"{l} from {s} ({d})", noteDefault:"Data collected on {d}.",
     reasons:{"Cezalı":"Suspended","Sakatlık":"Injury","Hastalık":"Illness","Kadroda değil":"Not in squad","Çapraz bağ":"Cruciate ligament","Belirsiz neden":"Unknown reason"},
-    leagues:{"Şampiyonlar Ligi":"Champions League"},
+    leagues:{"Şampiyonlar Ligi":"Champions League","Avrupa Ligi":"Europa League","Konferans Ligi":"Conference League"},
     teams:{"Bayern Münih":"Bayern Munich","Şahtar Donetsk":"Shakhtar Donetsk","AEK Atina":"AEK Athens","Slavia Prag":"Slavia Prague"}
   }
 };
@@ -1156,6 +1156,17 @@ function gval(m,wS,wM){
   if(m.xm&&wM){ gh+=wM*m.xm[0]; ga+=wM*m.xm[1]; W+=wM; }
   return W>0 ? [gh/W, ga/W] : [m.hg, m.ag];
 }
+// Avrupa kupaları: takımın başlangıç gücü kendi ligindeki gücünden, ligin Avrupa'daki seviyesine göre ölçeklenerek
+const EURO_CUPS = new Set(["Avrupa Ligi","Konferans Ligi"]);
+const LG_LEVEL = {"Premier League":1.12,"La Liga":1.08,"Serie A":1.05,"Bundesliga":1.05,"Ligue 1":1.0,"Süper Lig":0.92};
+function domPrior(team,cut){
+  for(const [dl,k] of Object.entries(LG_LEVEL)){
+    if(!(data[dl]||[]).some(t=>t.n===team)) continue;
+    const r=fitRatings(dl,cut); if(r.att[team]==null) continue;
+    return {a:r.att[team]*k, d:r.def[team]/k};
+  }
+  return {a:0.97,d:1.03};   // verisi olmayan lig (Portekiz, Hollanda, İskoçya...): ortalamanın biraz altı
+}
 function fitRatings(lg, cut=Infinity, wo=null){
   const wS=wo?wo.wS:MP.wS, wM=wo?wo.wM:MP.wM;
   const key=lg+"|"+cut+"|"+wS+"|"+wM; if(RCACHE[key]) return RCACHE[key];
@@ -1170,7 +1181,7 @@ function fitRatings(lg, cut=Infinity, wo=null){
   const teams=new Set((data[lg]||[]).map(t=>t.n)); ms.forEach(m=>{teams.add(m.h);teams.add(m.a);});
   const prior={}; const isCL = lg==="Şampiyonlar Ligi";
   teams.forEach(n=>{ const t=data[lg]?.find(x=>x.n===n);
-    prior[n] = t&&t.hist ? {a:1+MP.reg*(t.hist.gf/ha-1), d:1+MP.reg*(t.hist.ga/ha-1)} : (isCL ? {a:(1+MP.newA)/2,d:(1+MP.newD)/2} : {a:MP.newA,d:MP.newD}); });
+    prior[n] = EURO_CUPS.has(lg) ? domPrior(n,cut) : t&&t.hist ? {a:1+MP.reg*(t.hist.gf/ha-1), d:1+MP.reg*(t.hist.ga/ha-1)} : (isCL ? {a:(1+MP.newA)/2,d:(1+MP.newD)/2} : {a:MP.newA,d:MP.newD}); });
   const att={}, def={}; teams.forEach(n=>{ att[n]=prior[n].a; def[n]=prior[n].d; });
   const P = MP.prior*mu/2;
   const muH=mu*hs, muA=mu*(1-hs);
@@ -1321,6 +1332,7 @@ function teamStats(team){
   return {lg,n, sf:d(z.sf,z.ns), sa:d(z.sa,z.ns), tf:d(z.tf,z.ns), ta:d(z.ta,z.ns), xf:d(z.xf,z.nx), xa:d(z.xa,z.nx), gf:d(z.gf,z.nx), ga:d(z.ga,z.nx), mk};
 }
 // ---- Fikstür yoğunluğu ve rotasyon ----
+const EUROPE = new Set(["Şampiyonlar Ligi","Avrupa Ligi","Konferans Ligi"]);
 // Takımın bütün maç tarihleri (lig + Şampiyonlar Ligi; oynanmış ve fikstürdeki)
 let TEAM_DATES = null;
 function teamDates(){
@@ -1335,7 +1347,7 @@ function teamDates(){
 function gaps(team,iso,lg){
   const t=Date.parse(iso), l=teamDates()[team]||[]; let prev=null, next=null;
   for(const x of l){ if(x.d<t-6*3600e3) prev=x; else if(x.d>t+6*3600e3){ next=x; break; } }
-  return { rest: prev?Math.floor((t-prev.d)/864e5):null, next: next?Math.floor((next.d-t)/864e5):null, nextLg: next?.lg||null, other: !!next && next.lg==="Şampiyonlar Ligi" && lg!=="Şampiyonlar Ligi" };
+  return { rest: prev?Math.floor((t-prev.d)/864e5):null, next: next?Math.floor((next.d-t)/864e5):null, nextLg: next?.lg||null, other: !!next && EUROPE.has(next.lg) && !EUROPE.has(lg) };
 }
 const restDays = (team,iso) => gaps(team,iso).rest;
 // Yorgunluk ve rotasyon riski: 3 günden kısa dinlenme ve 3 gün içinde başka turnuvada maç; her biri bir puan
@@ -1362,7 +1374,7 @@ function cmpHTML(h,a,iso){
     const luck=X=>X&&X.gf!=null?(X.gf-X.xf)-(X.ga-X.xa):null;
     rows.push(`<span class="lab">${t_("cLuck")}</span><span>${sg(luck(A))}</span><span>${sg(luck(B))}</span>`); }
   if(g(A,"mk")!=null||g(B,"mk")!=null) row(t_("cMkt"), g(A,"mk"), g(B,"mk"), x=>sg(x?g(A,"mk"):g(B,"mk")), 0.1);
-  const lgOf=team=>Object.keys(RESULTS).find(l=>l!=="Şampiyonlar Ligi"&&RESULTS[l].some(m=>m.h===team||m.a===team));
+  const lgOf=team=>Object.keys(RESULTS).find(l=>!EUROPE.has(l)&&RESULTS[l].some(m=>m.h===team||m.a===team));
   const GH=congestion(h,iso,lgOf(h)), GA=congestion(a,iso,lgOf(a)), rh=GH.g.rest, ra=GA.g.rest;
   if(rh!=null||ra!=null) row(t_("cRest"), rh, ra, x=>{const v=x?rh:ra; return v==null?"–":t_("cDays",{n:v});}, 1);
   const nx=G=>G.g.next==null?"–":t_("cDays",{n:G.g.next})+(G.g.other?` (${L(G.g.nextLg)})`:"");
@@ -1571,6 +1583,8 @@ function rankCandidates(now, exclude=new Set()){
   const today = istDay.format(new Date(now));
   const used = new Set(COUPONS.filter(c=>c.date!==today).flatMap(c=>c.items.map(i=>i.h+"|"+i.a)));
   Object.entries(ODDS).forEach(([lg,list])=>list.forEach(e=>{
+    // Avrupa Ligi ve Konferans Ligi henüz kupona alınmaz: model bu turnuvalarda yeterince sınanmadı
+    if(EURO_CUPS.has(lg)) return;
     const k=Date.parse(e.iso), key=e.h+"|"+e.a; if(!(k>now && k<=until) || used.has(key) || exclude.has(key)) return;
     nMatches++;
     const m=matchModel(lg,e.h,e.a,e.iso,false);
@@ -1808,7 +1822,8 @@ function evalWeights(){
   MP.rot=keepR;
   let nC=0; lgs.forEach(lg=>RESULTS[lg].forEach(m=>{ const iso=new Date(m.d).toISOString(); if(congestion(m.h,iso,lg).c||congestion(m.a,iso,lg).c) nC++; }));
   for(const k in RCACHE) delete RCACHE[k]; for(const k in BTCACHE) delete BTCACHE[k];
-  return {cov,out,rot,nC};
+  const cups=[...EURO_CUPS,"Şampiyonlar Ligi"].map(lg=>{ const r=backtest(lg); return `${lg}: ${(RESULTS[lg]||[]).length} sonuç, sınanan ${r.n}${r.n?`, isabet ${Math.round(r.hit/r.n*100)}%, hata ${r.ll.toFixed(3)}`:""}`; });
+  return {cov,out,rot,nC,cups};
 }
 window.GM = { ready:false, buildCoupon, learn, snapshot, MP, backtest, evalWeights, reset:()=>{ for(const k in RCACHE) delete RCACHE[k]; for(const k in BTCACHE) delete BTCACHE[k]; } };
 

@@ -49,6 +49,10 @@ API-Football kurulumu (ücretli paket gerekir):
 
 Ücretsiz paket günde 100 istek verir; her güncelleme yaklaşık 8 istek kullanır, yani günde 8 güncelleme sınırın altında kalır.
 
+### Avrupa Ligi ve Konferans Ligi
+
+Sonuçlar, puan tablosu ve önümüzdeki 10 günün fikstürü her güncellemede ESPN'in herkese açık skor servisinden (site.api.espn.com, anahtar gerekmez, resmî olmayan bir servis) çekilir; bahis oranları The Odds API'den gelir (günde yaklaşık 4 kredi daha). Takımların başlangıç gücü kendi liglerindeki güçten, ligin Avrupa'daki seviyesine göre ölçeklenerek hesaplanır (`LG_LEVEL`); verisi olmayan liglerin takımları ortalamanın biraz altında başlar. Bu maçlar fikstür yoğunluğu hesabına da girer. Model bu turnuvalarda yeterince sınanana kadar bu maçlar günün kuponuna alınmaz.
+
 ### Maç istatistikleri ve takım karşılaştırması
 
 Günde iki kez football-data.co.uk'den bu sezonun maç istatistikleri çekilir (Premier League, La Liga, Serie A, Bundesliga, Ligue 1, Süper Lig): şut, isabetli şut ve kapanış oranları. Süper Lig'in bütün sezon sonuçları da buradan gelir.

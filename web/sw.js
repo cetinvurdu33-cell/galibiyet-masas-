@@ -1,6 +1,6 @@
 // Galibiyet Masası: çevrimdışı çalışma için önbellek.
 // Sayfa önce ağdan alınır (güncel veri), ağ yoksa önbellekten açılır.
-const CACHE = "galibiyet-v5";
+const CACHE = "galibiyet-v6";
 const FILES = ["./", "index.html", "manifest.webmanifest", "apple-touch-icon.png", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", e => {
