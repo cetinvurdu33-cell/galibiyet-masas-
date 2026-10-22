@@ -731,7 +731,7 @@ const I18N = {
     cpNums:"Model {p} · bahis piyasası {q} · birleşik tahmin {c}", cpTotal:"Toplam oran", cpAll:"Hepsinin tutma ihtimali",
     cpOver:"Maçta 3 ya da daha fazla gol", cpUnder:"Maçta en fazla 2 gol", under25:"2,5 alt",
     cpResW:"Tuttu", cpResL:"Tutmadı", cpResV:"Ertelendi", cpResP:"Bekliyor", cpWon:"Kupon kazandı", cpLost:"Kupon kaybetti",
-    cpWarn:"Kriter: oran en az {o}, model en az piyasa kadar iyimser ve birleşik tahmin en az {p}. Birleşik tahmin %40 model, %60 bahis piyasasıdır; piyasa sakatlık ve kadro haberlerini bizden iyi yansıttığı için ağırlığı daha fazladır. Seçimler takım galibiyeti ya da 2,5 üst/alt olabilir, bir maçtan tek seçim alınır. Oranlar bahis şirketlerinin ortalamasıdır; oynayacağınız sitedeki oran farklı olabilir. Seçimlerin hepsinin birden tutma ihtimali düşüktür. Bu bir istatistik tahminidir, kazanç garantisi ya da bahis tavsiyesi değildir.",
+    cpWarn:"Kriter: oran en az {o}, model en az piyasa kadar iyimser ama ondan en fazla {g} puan ayrışıyor ve birleşik tahmin en az {p}. Daha büyük ayrışma çoğu zaman modelin bilmediği bir haberdir (sakatlık, rotasyon), bu yüzden o seçimler alınmaz. Birleşik tahmin %40 model, %60 bahis piyasasıdır; piyasa sakatlık ve kadro haberlerini bizden iyi yansıttığı için ağırlığı daha fazladır. Seçimler takım galibiyeti ya da 2,5 üst/alt olabilir, bir maçtan tek seçim alınır. Oranlar bahis şirketlerinin ortalamasıdır; oynayacağınız sitedeki oran farklı olabilir. Seçimlerin hepsinin birden tutma ihtimali düşüktür. Bu bir istatistik tahminidir, kazanç garantisi ya da bahis tavsiyesi değildir.",
     cpShowAlt:"Alternatif kupon göster", cpBackMain:"Ana kupona dön", cpMainLbl:"Ana kupon · en güçlü seçimler",
     cpAltLbl:"Alternatif {k}/{n} · sıralamada {a}-{b}. seçimler, aynı kriterler", cpNoAlt:"Aynı kriterlere uyan başka seçim olmadığı için alternatif kupon yok.",
     cpAltsHist:"alternatifler {t}", cpAltN:"Alternatif {k}", myAdd:"+ Kuponuma ekle", myIn:"✓ Kuponumda", myTitle:"Kuponum", myDraft:"Hazırlanan kupon: {n} seçim", myHint:"Ana kupondan ve alternatiflerden seçimlerin yanındaki \"Kuponuma ekle\" düğmesine dokunarak kendi kuponunu kur. Her maçtan tek seçim alınır.", mySave:"Kuponu kaydet", myClear:"Temizle", mySaved:"Kaydettiğim kuponlar", myDel:"Sil", myDelQ:"Bu kupon silinsin mi?", myNote:"Kuponların bu cihazda saklanır. Maçlar oynanınca sonuçlar her güncellemede kendiliğinden işlenir.", myMade:"{d} tarihinde kuruldu",
@@ -804,7 +804,7 @@ const I18N = {
     cpNums:"Model {p} · betting market {q} · combined {c}", cpTotal:"Total odds", cpAll:"Chance all win",
     cpOver:"3 or more goals in the match", cpUnder:"2 goals or fewer in the match", under25:"Under 2.5",
     cpResW:"Won", cpResL:"Lost", cpResV:"Postponed", cpResP:"Pending", cpWon:"Coupon won", cpLost:"Coupon lost",
-    cpWarn:"Criteria: odds of at least {o}, the model at least as optimistic as the market, and a combined estimate of at least {p}. The combined estimate is 40% model and 60% betting market; the market gets more weight because it reflects injury and squad news better than we do. Picks can be a team win or over/under 2.5 goals, with one pick per match. Odds are the bookmakers' average; the odds on the site you use may differ. The chance of all picks winning together is low. This is a statistical estimate, not a guarantee of winnings or betting advice.",
+    cpWarn:"Criteria: odds of at least {o}, the model at least as optimistic as the market but no more than {g} points above it (a bigger gap is usually news the model does not know about, such as injuries or rotation), and a combined estimate of at least {p}. The combined estimate is 40% model and 60% betting market; the market gets more weight because it reflects injury and squad news better than we do. Picks can be a team win or over/under 2.5 goals, with one pick per match. Odds are the bookmakers' average; the odds on the site you use may differ. The chance of all picks winning together is low. This is a statistical estimate, not a guarantee of winnings or betting advice.",
     cpShowAlt:"Show alternative coupon", cpBackMain:"Back to main coupon", cpMainLbl:"Main coupon · strongest picks",
     cpAltLbl:"Alternative {k}/{n} · picks ranked {a}-{b}, same criteria", cpNoAlt:"No alternative coupon: no other picks meet the same criteria.",
     cpAltsHist:"alternatives {t}", cpAltN:"Alternative {k}", myAdd:"+ Add to my coupon", myIn:"✓ In my coupon", myTitle:"My coupon", myDraft:"Coupon in progress: {n} picks", myHint:"Build your own coupon by tapping \"Add to my coupon\" next to picks in the main coupon and the alternatives. One pick per match.", mySave:"Save coupon", myClear:"Clear", mySaved:"My saved coupons", myDel:"Delete", myDelQ:"Delete this coupon?", myNote:"Your coupons are stored on this device. Results are checked automatically on every update once the matches are played.", myMade:"made on {d}",
@@ -1531,6 +1531,8 @@ function applyData(j){
 // Oranlar ve kupon geçmişi data.json'dan gelir. Kupon her sabah GitHub'daki işte bu fonksiyonla hazırlanıp sabitlenir.
 // Orta (%45-55) ve yüksek (%55+) güvenli seçimler; 1-2 ve 2,5 Üst/Alt
 const CP_MIN_ODDS = 1.80, CP_MIN_P = 0.45, CP_HI_P = 0.55, CP_SIZE = 6, CP_WINDOW_H = 36;
+// Uyum filtresi: model piyasadan bu kadar fazla iyimserse seçim alınmaz (büyük ayrışma çoğu zaman modelin bilmediği bir haberdir)
+const CP_MAX_GAP = 0.15;
 // Kriterlere uyan seçimler, güçlüden zayıfa; bir maçtan tek seçim
 function rankCandidates(now, exclude=new Set()){
   const until = now + CP_WINDOW_H*3600e3;
@@ -1550,7 +1552,7 @@ function rankCandidates(now, exclude=new Set()){
       const imp=(1/o)/iv;
       // Geçmiş kupon sonuçlarından öğrenilen düzeltme (bu pazarda tahminler fazla iyimser çıktıysa güven düşer)
       const pcc = Math.min(0.95, pc*(CALIB[mk]??1));
-      if(o>=CP_MIN_ODDS && p>=imp && pcc>=CP_MIN_P) cands.push({lg,iso:e.iso,h:e.h,a:e.a,mk,side,odds:o,p:+p.toFixed(4),imp:+imp.toFixed(4),pc:+pcc.toFixed(4)});
+      if(o>=CP_MIN_ODDS && p>=imp && p-imp<=CP_MAX_GAP && pcc>=CP_MIN_P) cands.push({lg,iso:e.iso,h:e.h,a:e.a,mk,side,odds:o,p:+p.toFixed(4),imp:+imp.toFixed(4),pc:+pcc.toFixed(4)});
     });
   }));
   cands.sort((x,y)=>y.pc-x.pc || y.p-x.p);
@@ -1661,7 +1663,7 @@ function renderCoupon(){
   const hist = COUPONS.length>1||done.length ? `<details class="cp-hist"><summary>${t_("cpHist")}</summary>
       <p style="margin:6px 0 0">${t_("cpHistSum",{c:done.length,w:done.filter(x=>x.status==="won").length,n:picks.length,h:picks.filter(i=>i.res==="W").length,p:picks.length?pct(picks.filter(i=>i.res==="W").length/picks.length):"–"})}</p>
       <div class="cp-days">${COUPONS.slice(0,30).map(x=>`<details class="cp-day"><summary><b>${esc(dday(x.date))}</b> · ${x.items.filter(i=>i.res==="W").length}/${x.items.length} · ${t_("cpSt_"+x.status)}${(x.alts||[]).length?" · "+t_("cpAltsHist",{t:(x.alts||[]).map(a=>`${a.filter(i=>i.res==="W").length}/${a.length}`).join(", ")}):""}</summary>${dayHTML(x,st)}</details>`).join("")}</div></details>` : "";
-  box.innerHTML = head+old+empty+nav+`<div class="cp-list">${rows}</div>`+few+sum+`<p class="cp-warn">${t_("cpWarn",{o:dec(CP_MIN_ODDS,2),p:pct(CP_MIN_P)})}</p>`+myHTML()+hist+learnHTML();
+  box.innerHTML = head+old+empty+nav+`<div class="cp-list">${rows}</div>`+few+sum+`<p class="cp-warn">${t_("cpWarn",{o:dec(CP_MIN_ODDS,2),p:pct(CP_MIN_P),g:Math.round(CP_MAX_GAP*100)})}</p>`+myHTML()+hist+learnHTML();
 }
 // ---- Öğrenme ----
 // Bugünün oranlı maçları için model ve piyasa tahminini kaydeder; sonuçlar gelince öğrenmede kullanılır
