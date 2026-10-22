@@ -13,7 +13,8 @@ const WEB = join(ROOT, "web");
 const OUT = join(WEB, "data.json");
 const data = JSON.parse(readFileSync(OUT, "utf8"));
 
-if (!data.needCoupon) { console.log("Yeni oran yok, kupon değişmedi."); process.exit(0); }
+const EVAL = process.env.EVAL_MODEL === "true";   // elle başlatılan değerlendirme: ağırlıkları sınar, iş özetine yazar
+if (!data.needCoupon && !EVAL) { console.log("Yeni oran yok, kupon değişmedi."); process.exit(0); }
 
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".json": "application/json", ".png": "image/png", ".webmanifest": "application/manifest+json" };
 const server = createServer((req, res) => {
@@ -37,6 +38,16 @@ try {
   await page.route(/^https?:\/\/(?!127\.0\.0\.1)/, r => r.abort());
   await page.goto(url);
   await page.waitForFunction(() => window.GM && window.GM.ready, null, { timeout: 30000 });
+  if (EVAL) {
+    const ev = await page.evaluate(() => window.GM.evalWeights());
+    console.log(`::notice title=Değerlendirme: veri::${ev.cov.join(" · ")}`);
+    const best = [...ev.out].sort((a, b) => (a.ll + a.ou) - (b.ll + b.ou));
+    console.log(`::notice title=Değerlendirme: en iyi 6::${best.slice(0, 6).map(r => `şut ${r.wS} piyasa ${r.wM}: sonuç ${r.ll} üst/alt ${r.ou} isabet ${r.hit}`).join(" | ")}`);
+    const base = ev.out.find(r => r.wS === 0 && r.wM === 0);
+    if (base) console.log(`::notice title=Değerlendirme: eski model::yalnızca gol: sonuç ${base.ll} üst/alt ${base.ou} isabet ${base.hit} (${base.n} maç)`);
+    console.log(`::notice title=Değerlendirme: tümü::${ev.out.map(r => `${r.wS}/${r.wM}:${r.ll}/${r.ou}`).join(" ")}`);
+    if (!data.needCoupon) { await browser.close(); server.close(); process.exit(0); }
+  }
   // Önce dünkü sonuçlardan öğren, sonra bugünün tahminlerini kaydet ve kuponu kur
   const r = await page.evaluate(() => { const L = window.GM.learn(); const snap = window.GM.snapshot(Date.now()); const c = window.GM.buildCoupon(Date.now()); return { L, snap, c }; });
   coupon = r.c;

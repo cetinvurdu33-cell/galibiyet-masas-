@@ -17,6 +17,10 @@ on:
         description: "Oranları şimdi yeniden çek ve kuponu yeniden hazırla"
         type: boolean
         default: false
+      eval_model:
+        description: "Model ağırlıklarını geriye dönük sına (iş özetine yazar)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -68,8 +72,10 @@ jobs:
 
       # Yeni oran geldiyse günün kuponunu sayfadaki modelle hazırla
       - name: Günün kuponunu hazırla
+        env:
+          EVAL_MODEL: ${{ inputs.eval_model }}
         run: |
-          if [ -f web/data.json ] && grep -q '"needCoupon":true' web/data.json; then
+          if [ -f web/data.json ] && { grep -q '"needCoupon":true' web/data.json || [ "$EVAL_MODEL" = "true" ]; }; then
             mkdir -p /tmp/pw && cd /tmp/pw && npm init -y >/dev/null && npm i playwright@1.48.2 >/dev/null
             npx playwright install --with-deps chromium >/dev/null
             cd "$GITHUB_WORKSPACE" && PW_DIR=/tmp/pw node scripts/coupon.mjs

@@ -135,6 +135,7 @@ footer{font-size:12px;color:var(--muted)}
 .deep .grid .h{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
 .deep .grid span{text-align:right}.deep .grid span.lab{text-align:left}
 .deep .grid .tn{font-size:12px;font-weight:600;color:var(--muted);text-transform:none}
+.deep .grid span.b{font-weight:700;color:var(--win)}
 .frm{display:inline-flex;gap:2px;vertical-align:middle}
 .frm i{font-style:normal;font-size:10px;font-weight:700;width:16px;height:16px;border-radius:3px;display:inline-flex;align-items:center;justify-content:center;color:var(--bg)}
 .frm .W{background:var(--win)}.frm .D{background:var(--draw)}.frm .L{background:var(--loss)}
@@ -720,7 +721,7 @@ const I18N = {
     pick:"Tahmin:", halfPick:"Daha gollü yarı:", conf_hi:"Yüksek güven", conf_mid:"Orta güven", conf_lo:"Düşük güven",
     mktLine:"Model {a} · bahis piyasası {b} · tahmin ikisinin karışımı",
     h2hTitle:"Son 10 yılda aralarındaki maçlar ({n})", h2hShort:"Son 10 yılda {n} maç:", h2hAvg:"Maç başı gol", h2hNone:"Son 10 yılda aralarında lig maçı yok.", likelyScore:"En olası skor", over15:"1,5 üst", over25:"2,5 üst", over35:"3,5 üst", btts:"KG var", dcLbl:"Çifte şans",
-    fW:"G", fD:"B", fL:"M", deepTitle:"Derin analiz", dAtt:"Hücum gücü", dDef:"Savunma (düşük iyi)", dXg:"Beklenen gol", dForm:"Son 5 maç", dHome:"İç saha G-B-M", dAway:"Deplasman G-B-M",
+    fW:"G", fD:"B", fL:"M", deepTitle:"Derin analiz", cTitle:"Takım karşılaştırması (bu sezon, maç başına)", cShots:"Şut (atılan / yenen)", cSot:"İsabetli şut (atılan / yenen)", cXg:"Pozisyona göre gol beklentisi", cGoals:"Gerçek gol (atılan / yenen)", cLuck:"Şans payı", cMkt:"Piyasa gücü (gol farkı)", cRest:"Son maçtan beri", cDays:"{n} gün", cBetter:"Karşılaştırmada önde: {t} ({k}/{n} ölçü)", cEven:"Karşılaştırmada denge var", cNote:"Kendi liglerindeki maçlardan (en çok {n} maç). Yeşil, o ölçüde daha iyi olan taraftır. Şans payı artıdaysa takım, pozisyonlarının gösterdiğinden fazla gol farkı yakalamış demektir; bu genelde sürmez. Piyasa gücü, oynadığı maçların kapanış oranlarına göre ortalama bir rakibe karşı beklenen gol farkıdır.", dAtt:"Hücum gücü", dDef:"Savunma (düşük iyi)", dXg:"Beklenen gol", dForm:"Son 5 maç", dHome:"İç saha G-B-M", dAway:"Deplasman G-B-M",
     deepNote:"Hücum ve savunma gücü lig ortalamasına göredir: ×1,20 hücum, ortalama bir takımdan %20 fazla gol demektir. Savunmada ×0,80, ortalamadan %20 az gol yemek demektir.",
     cpEyebrow:"Her sabah 09:00 civarı", cpTitle:"Günün kuponu",
     cpNone:"Oran verisi bağlandığında burada her sabah, önümüzdeki 36 saatin maçlarından en fazla 6 seçimlik bir kupon çıkacak.",
@@ -793,7 +794,7 @@ const I18N = {
     pick:"Prediction:", halfPick:"Half with more goals:", conf_hi:"High confidence", conf_mid:"Medium confidence", conf_lo:"Low confidence",
     mktLine:"Model {a} · betting market {b} · prediction blends both",
     h2hTitle:"Meetings in the last 10 years ({n})", h2hShort:"Last 10 years, {n} meetings:", h2hAvg:"Goals per match", h2hNone:"No league meetings between them in the last 10 years.", likelyScore:"Most likely score", over15:"Over 1.5", over25:"Over 2.5", over35:"Over 3.5", btts:"Both score", dcLbl:"Double chance",
-    fW:"W", fD:"D", fL:"L", deepTitle:"Deep analysis", dAtt:"Attack rating", dDef:"Defence (lower is better)", dXg:"Expected goals", dForm:"Last 5", dHome:"Home W-D-L", dAway:"Away W-D-L",
+    fW:"W", fD:"D", fL:"L", deepTitle:"Deep analysis", cTitle:"Team comparison (this season, per match)", cShots:"Shots (for / against)", cSot:"Shots on target (for / against)", cXg:"Expected goals from chances", cGoals:"Actual goals (for / against)", cLuck:"Luck factor", cMkt:"Market strength (goal diff.)", cRest:"Days since last match", cDays:"{n} days", cBetter:"Ahead in the comparison: {t} ({k}/{n} measures)", cEven:"The comparison is balanced", cNote:"From matches in their own league (up to {n} matches). Green marks the side that is better on that measure. A positive luck factor means the team has a better goal difference than its chances suggest, which usually does not last. Market strength is the expected goal difference against an average opponent, based on the closing odds of its matches.", dAtt:"Attack rating", dDef:"Defence (lower is better)", dXg:"Expected goals", dForm:"Last 5", dHome:"Home W-D-L", dAway:"Away W-D-L",
     deepNote:"Attack and defence ratings are relative to the league average: ×1.20 attack means 20% more goals than an average team. ×0.80 defence means conceding 20% fewer goals than average.",
     cpEyebrow:"Every morning around 09:00", cpTitle:"Coupon of the day",
     cpNone:"Once odds data is connected, a coupon of up to 6 picks from the next 36 hours' matches will appear here every morning.",
@@ -1113,14 +1114,51 @@ const MP = {
   h2hK: 12,      // aralarındaki maçların etkisi: bu kadar "ortalama maç" ile dengelenir
   h2hCap: 0.10,  // aralarındaki maçlar beklenen golü en fazla bu oranda değiştirir
   shrink: 0,     // sonuç olasılıklarını lig ortalamasına çekme payı (aşırı özgüveni azaltır)
+  // Takım gücü yalnızca golden değil: maçtaki isabetli şutlardan çıkan gol beklentisi (wS) ve
+  // maçın kapanış oranlarından çıkan gol beklentisi (wM) de katılır; kalan pay gerçek goldür.
+  wS: 0.3, wM: 0.3,
 };
 const RCACHE = {};
+// ---- Maç istatistikleri (şut, isabetli şut, kapanış oranları) ----
+const STATS = {};   // lig → Map("Ev|Dep" → {d,hg,ag,hs,as,hst,ast,p1,px,p2,po})
+// Kapanış oranlarından piyasanın beklediği goller: toplam gol 2,5 üst olasılığından, ev/dep payı 1-2 olasılıklarından
+function poisCdf2(T){ return Math.exp(-T)*(1+T+T*T/2); }
+function invertMarket(p1,p2,po,mu){
+  let T=mu;
+  if(po>0&&po<1){ let lo=0.3, hi=7; for(let i=0;i<40;i++){ const mid=(lo+hi)/2; (1-poisCdf2(mid))<po ? lo=mid : hi=mid; } T=(lo+hi)/2; }
+  const target=p1/(p1+p2); let lo=0.02, hi=0.98;
+  for(let i=0;i<30;i++){ const s=(lo+hi)/2, lh=T*s, la=T-lh; let a=0,b=0;
+    const ph=[],pa=[]; for(let k=0;k<=10;k++){ ph[k]=pois(lh,k); pa[k]=pois(la,k); }
+    for(let x=0;x<=10;x++) for(let y=0;y<=10;y++){ if(x>y) a+=ph[x]*pa[y]; else if(y>x) b+=ph[x]*pa[y]; }
+    (a/(a+b))<target ? lo=s : hi=s; }
+  const s=(lo+hi)/2; return [T*s, T*(1-s)];
+}
+// Maç sonuçlarına şut ve piyasa beklentisini ekler (aynı sezonda her ev-deplasman eşleşmesi tektir)
+function attachStats(lg){
+  const S=STATS[lg], ms=RESULTS[lg]; if(!S||!ms) return;
+  let G=0,SOT=0; S.forEach(x=>{ if(x.hst!=null&&x.ast!=null){ G+=x.hg+x.ag; SOT+=x.hst+x.ast; } });
+  const conv = SOT ? G/SOT : null;
+  const mu = ms.length ? ms.reduce((t,m)=>t+m.hg+m.ag,0)/ms.length : LONG_AVG;
+  ms.forEach(m=>{ const x=S.get(m.h+"|"+m.a); if(!x||Math.abs(Date.parse(x.d)-m.d)>5*864e5) return;
+    m.st=x;
+    if(conv&&x.hst!=null&&x.ast!=null) m.xs=[x.hst*conv, x.ast*conv];
+    if(x.p1&&x.p2) m.xm = x.xm ??= invertMarket(x.p1,x.p2,x.po,mu);
+  });
+}
 function histAvg(lg){
   const ts=(data[lg]||[]).filter(t=>t.hist); return ts.length ? ts.reduce((s,t)=>s+t.hist.gf,0)/ts.length : LONG_AVG/2;
 }
-function fitRatings(lg, cut=Infinity){
-  const key=lg+"|"+cut; if(RCACHE[key]) return RCACHE[key];
-  const ms=(RESULTS[lg]||[]).filter(m=>m.d<cut);
+// Bir maçın takım gücü hesabında kullanılan "gol" değeri: gerçek gol, şut ve piyasa beklentisinin karışımı
+function gval(m,wS,wM){
+  let wG=1-wS-wM, gh=wG*m.hg, ga=wG*m.ag, W=wG;
+  if(m.xs&&wS){ gh+=wS*m.xs[0]; ga+=wS*m.xs[1]; W+=wS; }
+  if(m.xm&&wM){ gh+=wM*m.xm[0]; ga+=wM*m.xm[1]; W+=wM; }
+  return W>0 ? [gh/W, ga/W] : [m.hg, m.ag];
+}
+function fitRatings(lg, cut=Infinity, wo=null){
+  const wS=wo?wo.wS:MP.wS, wM=wo?wo.wM:MP.wM;
+  const key=lg+"|"+cut+"|"+wS+"|"+wM; if(RCACHE[key]) return RCACHE[key];
+  const ms=(RESULTS[lg]||[]).filter(m=>m.d<cut).map(m=>{ const [vh,va]=gval(m,wS,wM); return {...m,hg:vh,ag:va}; });
   const now = cut===Infinity ? Date.now() : cut;
   const ha=histAvg(lg);
   // lig ortalaması ve ev sahibi payı (yalnızca bu tarihe kadarki maçlardan)
@@ -1266,7 +1304,49 @@ function hl(name,q){
 function pickTxt(m,h,a){
   return m.best==="1" ? esc(t_("wins",{t:T(h)}))+" · "+pct(m.p1) : m.best==="2" ? esc(t_("wins",{t:T(a)}))+" · "+pct(m.p2) : t_("drawW")+" · "+pct(m.px);
 }
-function deepHTML(lg,h,a,m,f1){
+// ---- Takım karşılaştırması: şut, isabetli şut, gol beklentisi, piyasa gücü, dinlenme ----
+function teamStats(team){
+  const lg=Object.keys(STATS).find(l=>(RESULTS[l]||[]).some(m=>m.st&&(m.h===team||m.a===team))); if(!lg) return null;
+  const ms=RESULTS[lg].filter(m=>m.st&&(m.h===team||m.a===team)); const n=ms.length;
+  const z={sf:0,sa:0,tf:0,ta:0,xf:0,xa:0,gf:0,ga:0,ns:0,nx:0};
+  ms.forEach(m=>{ const H=m.h===team, x=m.st;
+    if(x.hs!=null&&x.as!=null){ z.ns++; z.sf+=H?x.hs:x.as; z.sa+=H?x.as:x.hs; z.tf+=H?x.hst:x.ast; z.ta+=H?x.ast:x.hst; }
+    if(m.xs){ z.nx++; z.xf+=m.xs[H?0:1]; z.xa+=m.xs[H?1:0]; z.gf+=H?m.hg:m.ag; z.ga+=H?m.ag:m.hg; } });
+  const r=fitRatings(lg,Infinity,{wS:0,wM:1}), mk = ms.some(m=>m.xm) && r.att[team]!=null ? r.mu/2*(r.att[team]-r.def[team]) : null;
+  const d=(a,b)=>b?a/b:null;
+  return {lg,n, sf:d(z.sf,z.ns), sa:d(z.sa,z.ns), tf:d(z.tf,z.ns), ta:d(z.ta,z.ns), xf:d(z.xf,z.nx), xa:d(z.xa,z.nx), gf:d(z.gf,z.nx), ga:d(z.ga,z.nx), mk};
+}
+function restDays(team,iso){
+  const t=Date.parse(iso); let last=null;
+  Object.values(RESULTS).forEach(ms=>ms.forEach(m=>{ if((m.h===team||m.a===team)&&m.d<t-3600e3&&(last==null||m.d>last)) last=m.d; }));
+  return last==null ? null : Math.floor((t-last)/864e5);
+}
+function cmpHTML(h,a,iso){
+  const A=teamStats(h), B=teamStats(a); if(!A&&!B) return "";
+  const f=v=>v==null?"–":dec(v,1), sg=v=>v==null?"–":(v>=0?"+":"−")+dec(Math.abs(v),1);
+  const rows=[], score={h:0,a:0,n:0};
+  // daha iyi olan kalın; fark çok küçükse ikisi de normal
+  const row=(lab,vh,va,txt,eps)=>{ let bh="",ba="";
+    if(vh!=null&&va!=null&&Math.abs(vh-va)>eps){ if(vh>va){bh="b";score.h++;} else {ba="b";score.a++;} score.n++; }
+    rows.push(`<span class="lab">${lab}</span><span class="${bh}">${txt(true)}</span><span class="${ba}">${txt(false)}</span>`); };
+  const g=(X,k)=>X?X[k]:null;
+  if(g(A,"sf")!=null||g(B,"sf")!=null) row(t_("cShots"), g(A,"sf")!=null?A.sf-A.sa:null, g(B,"sf")!=null?B.sf-B.sa:null, x=>{const X=x?A:B; return X&&X.sf!=null?`${f(X.sf)} / ${f(X.sa)}`:"–";}, 1);
+  if(g(A,"tf")!=null||g(B,"tf")!=null) row(t_("cSot"), g(A,"tf")!=null?A.tf-A.ta:null, g(B,"tf")!=null?B.tf-B.ta:null, x=>{const X=x?A:B; return X&&X.tf!=null?`${f(X.tf)} / ${f(X.ta)}`:"–";}, 0.4);
+  if(g(A,"xf")!=null||g(B,"xf")!=null){
+    row(t_("cXg"), g(A,"xf")!=null?A.xf-A.xa:null, g(B,"xf")!=null?B.xf-B.xa:null, x=>{const X=x?A:B; return X&&X.xf!=null?`${f(X.xf)} / ${f(X.xa)}`:"–";}, 0.15);
+    rows.push(`<span class="lab">${t_("cGoals")}</span><span>${A&&A.gf!=null?`${f(A.gf)} / ${f(A.ga)}`:"–"}</span><span>${B&&B.gf!=null?`${f(B.gf)} / ${f(B.ga)}`:"–"}</span>`);
+    const luck=X=>X&&X.gf!=null?(X.gf-X.xf)-(X.ga-X.xa):null;
+    rows.push(`<span class="lab">${t_("cLuck")}</span><span>${sg(luck(A))}</span><span>${sg(luck(B))}</span>`); }
+  if(g(A,"mk")!=null||g(B,"mk")!=null) row(t_("cMkt"), g(A,"mk"), g(B,"mk"), x=>sg(x?g(A,"mk"):g(B,"mk")), 0.1);
+  const rh=restDays(h,iso), ra=restDays(a,iso);
+  if(rh!=null||ra!=null) row(t_("cRest"), rh, ra, x=>{const v=x?rh:ra; return v==null?"–":t_("cDays",{n:v});}, 1);
+  const who = score.n ? (score.h>score.a ? t_("cBetter",{t:T(h),k:score.h,n:score.n}) : score.a>score.h ? t_("cBetter",{t:T(a),k:score.a,n:score.n}) : t_("cEven")) : "";
+  return `<div style="margin-top:10px"><div class="bl" style="margin:0">${t_("cTitle")}</div>
+    <div class="grid"><span class="lab"></span><span class="tn">${esc(T(h))}</span><span class="tn">${esc(T(a))}</span>${rows.join("")}</div>
+    ${who?`<p style="margin:6px 0 0"><b>${esc(who)}</b></p>`:""}
+    <p class="muted" style="margin:4px 0 0">${t_("cNote",{n:Math.max(A?.n||0,B?.n||0)})}</p></div>`;
+}
+function deepHTML(lg,h,a,m,f1,iso){
   const fh=formOf(lg,h), fa=formOf(lg,a);
   const frm=f=>f.last.length?`<span class="frm">${f.last.map(x=>`<i class="${x}">${t_("f"+x)}</i>`).join("")}</span>`:"–";
   const rec=r=>`${r.W}-${r.D}-${r.L}`;
@@ -1282,6 +1362,7 @@ function deepHTML(lg,h,a,m,f1){
       <span class="lab">${t_("dHome")}</span><span>${rec(fh.home)}</span><span>–</span>
       <span class="lab">${t_("dAway")}</span><span>–</span><span>${rec(fa.away)}</span>`:""}
     </div>
+    ${iso?cmpHTML(h,a,iso):""}
     ${h2hHTML(h,a,m)}
     <div class="kv" style="margin-top:8px"><span>${t_("over15")} <b>${pct(m.o15)}</b></span><span>${t_("over25")} <b>${pct(m.o25)}</b></span><span>${t_("over35")} <b>${pct(m.o35)}</b></span><span>${t_("btts")} <b>${pct(m.btts)}</b></span><span>1X <b>${pct(m.p1+m.px)}</b></span><span>X2 <b>${pct(m.px+m.p2)}</b></span><span>12 <b>${pct(m.p1+m.p2)}</b></span></div>
     <p class="muted" style="margin:6px 0 0">${t_("deepNote")}</p>
@@ -1356,7 +1437,7 @@ function halves(){
         <div class="h2" style="flex:${p.h2}">${lbl(p.h2,t_("h2s"))}</div>
       </div>
       <div class="verdict"><span>${t_("halfPick")} <b>${lab}</b></span><span>${t_("h1s")} ${f1(tot*(1-share))} · ${t_("h2s")} ${f1(tot*share)} ${t_("goals")}</span></div>
-      ${deepHTML(lg,h,a,m,f1)}
+      ${deepHTML(lg,h,a,m,f1,iso)}
       ${(m.ih.list.length||m.ia.list.length)?`<div class="absn">${absHTML(h,m.ih)}${absHTML(a,m.ia)}<span class="src">${absSrc(lg)}</span></div>`:""}
     </article>`;
   }).join("");
@@ -1410,10 +1491,22 @@ function applyData(j){
   if(j.learn){ LEARN=j.learn; applyLearn(j.learn); }
   if(j.h2h) H2H_LOADED = true;
   Object.entries(j.h2h?.pairs||{}).forEach(([k,v])=>{ H2H[k]=(v||"").split(";").filter(Boolean).map(r=>{ const [d,h,a,hg,ag]=r.split("|"); return {d,h,a,hg:+hg,ag:+ag}; }); });
-  // Otomatik tablosu olmayan ligler (Süper Lig): The Odds API skorlarıyla gelen yeni sonuçlar tabloya ve modele eklenir
-  Object.entries(j.extraResults||{}).forEach(([lg,txt])=>{
+  // Bu sezonun maç istatistikleri (football-data.co.uk)
+  Object.entries(j.stats?.leagues||{}).forEach(([lg,txt])=>{
+    const n=v=>v===""||v==null?null:+v, M=new Map();
+    (txt||"").split("\n").filter(Boolean).forEach(r=>{ const [d,h,a,hg,ag,hs,as,hst,ast,p1,px,p2,po]=r.split("|");
+      M.set(h+"|"+a,{d,h,a,hg:+hg,ag:+ag,hs:n(hs),as:n(as),hst:n(hst),ast:n(ast),p1:n(p1),px:n(px),p2:n(p2),po:n(po)}); });
+    STATS[lg]=M;
+  });
+  // Otomatik tablosu olmayan ligler (Süper Lig): The Odds API skorları ve sezon istatistikleriyle gelen sonuçlar tabloya ve modele eklenir
+  const extraLgs = new Set([...Object.keys(j.extraResults||{}), ...Object.keys(STATS).filter(lg=>LEAGUES[lg])]);
+  extraLgs.forEach(lg=>{
+    const txt=(j.extraResults||{})[lg];
     if(j.leagues?.[lg]?.table) return;
-    const rs=(txt||"").split("\n").filter(Boolean).map(r=>{ const [d,h,a,hg,ag]=r.split("|"); return {d:Date.parse(d),h,a,hg:+hg,ag:+ag}; }).sort((x,y)=>x.d-y.d);
+    const rs=(txt||"").split("\n").filter(Boolean).map(r=>{ const [d,h,a,hg,ag]=r.split("|"); return {d:Date.parse(d),h,a,hg:+hg,ag:+ag}; });
+    const seen=new Set(rs.map(m=>m.h+"|"+m.a));
+    (STATS[lg]||new Map()).forEach(x=>{ if(!seen.has(x.h+"|"+x.a)) rs.push({d:Date.parse(x.d+"T17:00:00Z"),h:x.h,a:x.a,hg:x.hg,ag:x.ag}); });
+    rs.sort((x,y)=>x.d-y.d);
     RESULTS[lg]=rs;
     const cut=Date.parse(BUILT_ON+"T21:00:00Z"), tb={};
     (LEAGUES[lg]||"").trim().split("\n").forEach(r=>{ const f=r.split("|"); tb[f[0]]=f.slice(1).map(Number); });
@@ -1421,6 +1514,7 @@ function applyData(j){
       const r=m.hg>m.ag?[0,2]:m.hg<m.ag?[2,0]:[1,1]; H[r[0]]++; A[r[1]]++; H[3]+=m.hg; H[4]+=m.ag; A[3]+=m.ag; A[4]+=m.hg; });
     LEAGUES[lg]=Object.entries(tb).map(([n,v])=>[n,...v].join("|")).join("\n");
   });
+  Object.keys(STATS).forEach(attachStats);
   ABS_SRC = j.status?.absences || {};
   build();
   for(const k in RCACHE) delete RCACHE[k]; for(const k in BTCACHE) delete BTCACHE[k];
@@ -1610,8 +1704,8 @@ function learn(){
   // 2) Model ayarları: bu sezonun bütün maçlarıyla yeniden sına, yalnızca belirgin iyileşmeyi kabul et
   const lgs=Object.keys(RESULTS).filter(lg=>(RESULTS[lg]||[]).length>=30);
   const score=()=>{ for(const k in RCACHE) delete RCACHE[k]; for(const k in BTCACHE) delete BTCACHE[k];
-    let n=0,ll=0; lgs.forEach(lg=>{ const r=backtest(lg); if(r.n){ n+=r.n; ll+=r.ll*r.n; } }); return n?ll/n:null; };
-  const keys={half:[30,45,60,90],prior:[8,12,16],newA:[0.7,0.75,0.85],newD:[1.0,1.05,1.15]};
+    let n=0,ll=0; lgs.forEach(lg=>{ const r=backtest(lg); if(r.n){ n+=r.n; ll+=(r.ll+r.llOU)*r.n; } }); return n?ll/n:null; };   // maç sonucu + 2,5 Üst/Alt hatası
+  const keys={wS:[0,0.15,0.3,0.45],wM:[0,0.15,0.3,0.45,0.6],half:[30,45,60,90],prior:[8,12,16],newA:[0.7,0.75,0.85],newD:[1.0,1.05,1.15]};
   const start={...MP}; const base=score(); let cur=base, mp={};
   if(base!=null){
     for(const [k,vals] of Object.entries(keys)){ let bestV=MP[k];
@@ -1666,7 +1760,18 @@ $("couponSec").addEventListener("click",e=>{
   const del=e.target.closest("[data-mydel]");
   if(del && confirm(t_("myDelQ"))){ MY.saved=MY.saved.filter(s=>s.id!==del.dataset.mydel); mySave(); renderCoupon(); }
 });
-window.GM = { ready:false, buildCoupon, learn, snapshot, MP, backtest, reset:()=>{ for(const k in RCACHE) delete RCACHE[k]; for(const k in BTCACHE) delete BTCACHE[k]; } };
+// Değerlendirme: şut ve piyasa ağırlıklarının her birleşimi için geriye dönük test (iş özetine yazılır)
+function evalWeights(){
+  const lgs=Object.keys(RESULTS).filter(lg=>(RESULTS[lg]||[]).length>=30), keep={wS:MP.wS,wM:MP.wM}, out=[];
+  const cov=lgs.map(lg=>{ const ms=RESULTS[lg]; return `${lg} ${ms.length} maç, şut ${ms.filter(m=>m.xs).length}, oran ${ms.filter(m=>m.xm).length}`; });
+  for(const wS of [0,0.15,0.3,0.45]) for(const wM of [0,0.15,0.3,0.45,0.6]){
+    MP.wS=wS; MP.wM=wM; for(const k in RCACHE) delete RCACHE[k]; for(const k in BTCACHE) delete BTCACHE[k];
+    let n=0,ll=0,ou=0,hit=0; lgs.forEach(lg=>{ const r=backtest(lg); if(r.n){ n+=r.n; ll+=r.ll*r.n; ou+=r.llOU*r.n; hit+=r.hit; } });
+    out.push({wS,wM,n,ll:+(ll/n).toFixed(4),ou:+(ou/n).toFixed(4),hit:+(hit/n).toFixed(3)}); }
+  Object.assign(MP,keep); for(const k in RCACHE) delete RCACHE[k]; for(const k in BTCACHE) delete BTCACHE[k];
+  return {cov,out};
+}
+window.GM = { ready:false, buildCoupon, learn, snapshot, MP, backtest, evalWeights, reset:()=>{ for(const k in RCACHE) delete RCACHE[k]; for(const k in BTCACHE) delete BTCACHE[k]; } };
 
 function absSrc(lg){
   const v=ABS_SRC[lg]; if(!v||!v.source) return "";

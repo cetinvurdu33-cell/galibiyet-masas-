@@ -49,6 +49,14 @@ API-Football kurulumu (ücretli paket gerekir):
 
 Ücretsiz paket günde 100 istek verir; her güncelleme yaklaşık 8 istek kullanır, yani günde 8 güncelleme sınırın altında kalır.
 
+### Maç istatistikleri ve takım karşılaştırması
+
+Günde iki kez football-data.co.uk'den bu sezonun maç istatistikleri çekilir (Premier League, La Liga, Serie A, Bundesliga, Ligue 1, Süper Lig): şut, isabetli şut ve kapanış oranları. Süper Lig'in bütün sezon sonuçları da buradan gelir.
+
+- **Takım gücü** yalnızca golden hesaplanmaz. İsabetli şutlardan çıkan gol beklentisi (`MP.wS`) ve maçların kapanış oranlarından çıkan gol beklentisi (`MP.wM`) de katılır, kalan pay gerçek goldür. Bu ağırlıklar her sabah öğrenmede yeniden sınanır.
+- **Maç kartı → Derin analiz → Takım karşılaştırması:** iki takımın maç başına şut, isabetli şut, pozisyona göre gol beklentisi, gerçek gol, şans payı, piyasa gücü ve son maçtan beri geçen gün sayısı. İyi olan taraf yeşil yazılır.
+- Ağırlıkların hepsini hemen sınamak için Actions'ta "Web uygulamasını yayınla" işini "Model ağırlıklarını geriye dönük sına" seçeneğiyle çalıştırın; sonuçlar iş özetinde görünür.
+
 ### Günün kuponu
 
 Her sabah (İstanbul saatiyle 08:00'den sonraki ilk güncellemede) The Odds API'den önümüzdeki 48 saatin bahis oranları çekilir. Ardından sayfadaki modelle, önümüzdeki 36 saatin maçlarından (önceki kuponlarda yer almayanlar) en fazla 6 seçimlik bir kupon hazırlanır (`scripts/coupon.mjs`, sayfayı başsız tarayıcıda açar). Kriter: oran en az 1,80, model olasılığı en az %45 (orta ve yüksek güven). Seçimler takım galibiyeti (1 ya da 2) veya 2,5 Üst/Alt olabilir; bir maçtan tek seçim alınır. Seçimler, modelle piyasanın ortalaması olan birleşik tahmine göre sıralanır. Kuponlar ve sonuçları önceki yayından devralınarak `couponHistory` içinde tutulur ve sayfada "Kupon karnesi" olarak görünür.
