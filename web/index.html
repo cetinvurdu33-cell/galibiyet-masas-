@@ -1116,7 +1116,7 @@ const MP = {
   shrink: 0,     // sonuç olasılıklarını lig ortalamasına çekme payı (aşırı özgüveni azaltır)
   // Takım gücü yalnızca golden değil: maçtaki isabetli şutlardan çıkan gol beklentisi (wS) ve
   // maçın kapanış oranlarından çıkan gol beklentisi (wM) de katılır; kalan pay gerçek goldür.
-  wS: 0.3, wM: 0.3,
+  wS: 0.45, wM: 0.3,   // 381 maçlık geriye dönük testte en iyi birleşim (22 Ekim 2026)
 };
 const RCACHE = {};
 // ---- Maç istatistikleri (şut, isabetli şut, kapanış oranları) ----
@@ -1705,7 +1705,7 @@ function learn(){
   const lgs=Object.keys(RESULTS).filter(lg=>(RESULTS[lg]||[]).length>=30);
   const score=()=>{ for(const k in RCACHE) delete RCACHE[k]; for(const k in BTCACHE) delete BTCACHE[k];
     let n=0,ll=0; lgs.forEach(lg=>{ const r=backtest(lg); if(r.n){ n+=r.n; ll+=(r.ll+r.llOU)*r.n; } }); return n?ll/n:null; };   // maç sonucu + 2,5 Üst/Alt hatası
-  const keys={wS:[0,0.15,0.3,0.45],wM:[0,0.15,0.3,0.45,0.6],half:[30,45,60,90],prior:[8,12,16],newA:[0.7,0.75,0.85],newD:[1.0,1.05,1.15]};
+  const keys={wS:[0,0.15,0.3,0.45,0.6,0.75],wM:[0,0.15,0.3,0.45,0.6],half:[30,45,60,90],prior:[8,12,16],newA:[0.7,0.75,0.85],newD:[1.0,1.05,1.15]};
   const start={...MP}; const base=score(); let cur=base, mp={};
   if(base!=null){
     for(const [k,vals] of Object.entries(keys)){ let bestV=MP[k];
@@ -1764,7 +1764,7 @@ $("couponSec").addEventListener("click",e=>{
 function evalWeights(){
   const lgs=Object.keys(RESULTS).filter(lg=>(RESULTS[lg]||[]).length>=30), keep={wS:MP.wS,wM:MP.wM}, out=[];
   const cov=lgs.map(lg=>{ const ms=RESULTS[lg]; return `${lg} ${ms.length} maç, şut ${ms.filter(m=>m.xs).length}, oran ${ms.filter(m=>m.xm).length}`; });
-  for(const wS of [0,0.15,0.3,0.45]) for(const wM of [0,0.15,0.3,0.45,0.6]){ if(wS+wM>0.9) continue;
+  for(const wS of [0,0.15,0.3,0.45,0.6,0.75]) for(const wM of [0,0.15,0.3,0.45,0.6]){ if(wS+wM>0.9) continue;
     MP.wS=wS; MP.wM=wM; for(const k in RCACHE) delete RCACHE[k]; for(const k in BTCACHE) delete BTCACHE[k];
     let n=0,ll=0,ou=0,hit=0; lgs.forEach(lg=>{ const r=backtest(lg); if(r.n){ n+=r.n; ll+=r.ll*r.n; ou+=r.llOU*r.n; hit+=r.hit; } });
     out.push({wS,wM,n,ll:+(ll/n).toFixed(4),ou:+(ou/n).toFixed(4),hit:+(hit/n).toFixed(3)}); }
