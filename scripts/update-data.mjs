@@ -500,7 +500,7 @@ async function buildStats(known, status) {
 const CUPS = { "Avrupa Ligi": "uefa.europa", "Konferans Ligi": "uefa.europa.conf" };
 const ymd = d => d.toISOString().slice(0, 10).replace(/-/g, "");
 /** Bu sezonun lig aşaması sonuçları, puan tablosu ve önümüzdeki 10 günün fikstürü */
-async function fetchCups(allKnown, status) {
+async function fetchCups(allKnown, status, prevCup) {
   const out = {}, now = new Date(), y = now.getUTCFullYear(), s0 = now.getUTCMonth() >= 6 ? y : y - 1;
   const from = new Date(Date.UTC(s0, 8, 1)), to = new Date(now.getTime() + FIXTURE_DAYS * 864e5);
   for (const [lg, slug] of Object.entries(CUPS)) {
@@ -508,16 +508,23 @@ async function fetchCups(allKnown, status) {
       let j;
       if (process.env.FD_MOCK_DIR) { const f = join(process.env.FD_MOCK_DIR, `ESPN-${slug}.json`); if (!existsSync(f)) continue; j = JSON.parse(readFileSync(f, "utf8")); }
       else {
-        // haftalık parçalar halinde (uzun aralıkları servis reddediyor)
-        j = { events: [] }; const seen = new Set(); let fails = 0, lastErr = "";
-        for (let t = from.getTime(); t <= to.getTime(); t += 7 * 864e5) {
-          const a = new Date(t), b = new Date(Math.min(t + 6 * 864e5, to.getTime()));
-          const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/${slug}/scoreboard?dates=${ymd(a)}-${ymd(b)}`);
+        // Gün gün sorgulanır. Önceki yayında bu turnuvanın sonuçları varsa yalnızca son 4 gün ve önümüzdeki günler istenir.
+        j = { events: [] }; const seen = new Set(); let fails = 0, ok = 0, lastErr = "";
+        const start = prevCup?.[lg]?.results ? Math.max(from.getTime(), now.getTime() - 4 * 864e5) : from.getTime();
+        for (let t = start; t <= to.getTime(); t += 864e5) {
+          const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/${slug}/scoreboard?dates=${ymd(new Date(t))}`);
           if (!res.ok) { fails++; lastErr = `HTTP ${res.status} ${(await res.text()).slice(0, 80)}`; continue; }
+          ok++;
           for (const e of (await res.json()).events || []) if (!seen.has(e.id)) { seen.add(e.id); j.events.push(e); }
-          await sleep(300);
+          await sleep(150);
         }
-        if (!j.events.length && fails) throw new Error(lastErr);
+        if (!ok) throw new Error(lastErr);
+        // önceki sonuçlarla birleştir
+        for (const r of (prevCup?.[lg]?.results || "").split("\n").filter(Boolean)) {
+          const [iso, h, a, hg, ag] = r.split("|");
+          j.events.push({ id: "prev" + iso + h, date: iso, prev: true, competitions: [{ status: { type: { completed: true, state: "post" } },
+            competitors: [{ homeAway: "home", score: hg, team: { displayName: h } }, { homeAway: "away", score: ag, team: { displayName: a } }] }] });
+        }
       }
       const evs = (j.events || []).map(e => {
         const c = e.competitions?.[0] || {}, hm = (c.competitors || []).find(x => x.homeAway === "home"), aw = (c.competitors || []).find(x => x.homeAway === "away");
@@ -527,7 +534,9 @@ async function fetchCups(allKnown, status) {
       }).filter(e => e && e.h && e.a);
       const teams = new Map(); evs.forEach(e => { teams.set(e.h, { id: e.h, name: e.h }); teams.set(e.a, { id: e.a, name: e.a }); });
       const names = buildNameMap([...teams.values()], allKnown);
-      const R = evs.filter(e => e.done && Number.isFinite(e.hg) && Number.isFinite(e.ag)).sort((a, b) => a.iso.localeCompare(b.iso));
+      const rk = new Set();
+      const R = evs.filter(e => e.done && Number.isFinite(e.hg) && Number.isFinite(e.ag)).sort((a, b) => a.iso.localeCompare(b.iso))
+        .filter(e => { const k = names.get(e.h) + "|" + names.get(e.a) + "|" + e.iso.slice(0, 10); if (rk.has(k)) return false; rk.add(k); return true; });
       const F = evs.filter(e => !e.done && e.state === "pre" && Date.parse(e.iso) > now.getTime()).sort((a, b) => a.iso.localeCompare(b.iso));
       const tb = new Map(); [...teams.keys()].forEach(n => tb.set(names.get(n), [0, 0, 0, 0, 0]));
       R.forEach(e => { const H = tb.get(names.get(e.h)), A = tb.get(names.get(e.a));
@@ -539,7 +548,12 @@ async function fetchCups(allKnown, status) {
         results: R.map(e => `${e.iso}|${names.get(e.h)}|${names.get(e.a)}|${e.hg}|${e.ag}`).join("\n"), home: { hg, ag, n: R.length }, names: [...new Set(names.values())] };
       console.log(`✓ ${lg}: ${tb.size} takım, ${R.length} maç, ${F.length} yaklaşan maç`);
       status.cups = { ...(status.cups || {}), [lg]: `${tb.size} takım, ${R.length} sonuç, ${F.length} fikstür` };
-    } catch (e) { console.warn(`✗ ${lg}: ${e.message}`); status.cups = { ...(status.cups || {}), [lg]: "hata: " + e.message.slice(0, 80) }; }
+    } catch (e) {
+      console.warn(`✗ ${lg}: ${e.message}`); status.cups = { ...(status.cups || {}), [lg]: "hata: " + e.message.slice(0, 80) + (prevCup?.[lg] ? " (önceki veriler kullanıldı)" : "") };
+      // alınamazsa önceki yayındaki veriler kalır (geçmiş fikstür ayıklanır)
+      const p = prevCup?.[lg];
+      if (p?.table) out[lg] = { ...p, fixtures: (p.fixtures || "").split("\n").filter(r => r && Date.parse(r.split("|")[0]) > Date.now()).join("\n"), names: p.table.split("\n").map(r => r.split("|")[0]) };
+    }
   }
   return out;
 }
@@ -641,11 +655,6 @@ async function main() {
     console.error("Hiçbir lig güncellenemedi; önceki yayın olduğu gibi kalacak.");
     process.exit(1);
   }
-  // Avrupa Ligi ve Konferans Ligi: sonuçlar, tablo ve fikstür; oran eşleştirmesi için takım adları
-  for (const [lg, v] of Object.entries(await fetchCups(allKnown, status))) {
-    const { names, ...rest } = v; leagues[lg] = rest;
-    known[lg] = [...new Set([...allKnown, ...names])];
-  }
 
   // Eksik oyuncular: önce API-Football, alınamayan ligler için yedek liste
   const absences = [];
@@ -680,6 +689,11 @@ async function main() {
 
   // Oranlar (günde bir kez) ve kupon geçmişi
   const prev = await getPrev();
+  // Avrupa Ligi ve Konferans Ligi: sonuçlar, tablo ve fikstür; oran eşleştirmesi için takım adları
+  for (const [lg, v] of Object.entries(await fetchCups(allKnown, status, prev?.leagues))) {
+    const { names, ...rest } = v; leagues[lg] = rest;
+    known[lg] = [...new Set([...allKnown, ...names])];
+  }
   let odds = prev?.odds || null, needCoupon = false;
   const now = new Date();
   if (process.env.ODDS_API_KEY || process.env.FD_MOCK_DIR && process.env.ODDS_MOCK) {
