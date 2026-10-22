@@ -81,6 +81,7 @@ const ALIASES = {
   "M'gladbach": "Mönchengladbach",
   "Paris SG": "Paris Saint-Germain",
   "Buyuksehyr": "Başakşehir",
+  "Goztep": "Göztepe",
 };
 
 // API-Football lig numaraları
