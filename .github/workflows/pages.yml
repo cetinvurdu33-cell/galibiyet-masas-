@@ -72,6 +72,7 @@ jobs:
 
       # Yeni oran geldiyse günün kuponunu sayfadaki modelle hazırla
       - name: Günün kuponunu hazırla
+        timeout-minutes: 10
         env:
           EVAL_MODEL: ${{ inputs.eval_model }}
         run: |

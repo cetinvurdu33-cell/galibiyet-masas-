@@ -1709,7 +1709,7 @@ function learn(){
   const start={...MP}; const base=score(); let cur=base, mp={};
   if(base!=null){
     for(const [k,vals] of Object.entries(keys)){ let bestV=MP[k];
-      for(const v of vals){ const old=MP[k]; MP[k]=v; const sc=score(); if(sc<cur-0.0005){ cur=sc; bestV=v; } MP[k]=old; }
+      for(const v of vals){ if((k==='wS'&&v+MP.wM>0.9)||(k==='wM'&&v+MP.wS>0.9)) continue; const old=MP[k]; MP[k]=v; const sc=score(); if(sc<cur-0.0005){ cur=sc; bestV=v; } MP[k]=old; }
       MP[k]=bestV; if(bestV!==start[k]) mp[k]=bestV; }
     notes.push(Object.keys(mp).length ? `model ayarları güncellendi (hata ${base.toFixed(4)} → ${cur.toFixed(4)})` : `model ayarları korundu (hata ${base.toFixed(4)})`);
   }
@@ -1764,7 +1764,7 @@ $("couponSec").addEventListener("click",e=>{
 function evalWeights(){
   const lgs=Object.keys(RESULTS).filter(lg=>(RESULTS[lg]||[]).length>=30), keep={wS:MP.wS,wM:MP.wM}, out=[];
   const cov=lgs.map(lg=>{ const ms=RESULTS[lg]; return `${lg} ${ms.length} maç, şut ${ms.filter(m=>m.xs).length}, oran ${ms.filter(m=>m.xm).length}`; });
-  for(const wS of [0,0.15,0.3,0.45]) for(const wM of [0,0.15,0.3,0.45,0.6]){
+  for(const wS of [0,0.15,0.3,0.45]) for(const wM of [0,0.15,0.3,0.45,0.6]){ if(wS+wM>0.9) continue;
     MP.wS=wS; MP.wM=wM; for(const k in RCACHE) delete RCACHE[k]; for(const k in BTCACHE) delete BTCACHE[k];
     let n=0,ll=0,ou=0,hit=0; lgs.forEach(lg=>{ const r=backtest(lg); if(r.n){ n+=r.n; ll+=r.ll*r.n; ou+=r.llOU*r.n; hit+=r.hit; } });
     out.push({wS,wM,n,ll:+(ll/n).toFixed(4),ou:+(ou/n).toFixed(4),hit:+(hit/n).toFixed(3)}); }

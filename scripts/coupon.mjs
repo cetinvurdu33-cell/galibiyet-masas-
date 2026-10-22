@@ -39,7 +39,7 @@ try {
   await page.goto(url);
   await page.waitForFunction(() => window.GM && window.GM.ready, null, { timeout: 30000 });
   if (EVAL) {
-    const ev = await page.evaluate(() => window.GM.evalWeights());
+    const ev = await Promise.race([page.evaluate(() => window.GM.evalWeights()), new Promise((_, rej) => setTimeout(() => rej(new Error("değerlendirme 3 dakikada bitmedi")), 180000))]);
     console.log(`::notice title=Değerlendirme: veri::${ev.cov.join(" · ")}`);
     const best = [...ev.out].sort((a, b) => (a.ll + a.ou) - (b.ll + b.ou));
     console.log(`::notice title=Değerlendirme: en iyi 6::${best.slice(0, 6).map(r => `şut ${r.wS} piyasa ${r.wM}: sonuç ${r.ll} üst/alt ${r.ou} isabet ${r.hit}`).join(" | ")}`);
@@ -58,6 +58,7 @@ try {
   if (process.env.GITHUB_ACTIONS) console.log(`::notice title=Öğrenme::${r.L.notes.join(" · ")}`);
 } catch (e) {
   console.error("Kupon hazırlanamadı: " + e.message);
+  if (process.env.GITHUB_ACTIONS) console.log(`::warning title=Kupon betiği::${e.message.slice(0, 500)}`);
 } finally {
   if (browser) await browser.close().catch(() => {});
 }
