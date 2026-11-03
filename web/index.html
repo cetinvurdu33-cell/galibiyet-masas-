@@ -1116,6 +1116,7 @@ const MP = {
   shrink: 0,     // sonuç olasılıklarını lig ortalamasına çekme payı (aşırı özgüveni azaltır)
   // Takım gücü yalnızca golden değil: maçtaki isabetli şutlardan çıkan gol beklentisi (wS) ve
   // maçın kapanış oranlarından çıkan gol beklentisi (wM) de katılır; kalan pay gerçek goldür.
+  prevK: 0,     // geçen sezonun maçlarının ağırlık çarpanı (0 = kullanılmaz); zamanla azalan ağırlığın üstüne
   rot: 0,       // yoğun fikstür etkisi (her yorgunluk/rotasyon puanı için gol beklentisinde değişim payı)
   wS: 0.45, wM: 0.3,   // 381 maçlık geriye dönük testte en iyi birleşim (22 Ekim 2026)
 };
@@ -1146,6 +1147,16 @@ function attachStats(lg){
     if(x.p1&&x.p2) m.xm = x.xm ??= invertMarket(x.p1,x.p2,x.po,mu);
   });
 }
+// Geçen sezonun maçları (football-data.co.uk): takım gücüne zamanla azalan ağırlıkla katılır
+const PREV = {};   // lig → [{d,h,a,hg,ag,xs,xm,prev:true}]
+function buildPrev(lg,txt){
+  const n=v=>v===""||v==null?null:+v, rows=(txt||"").split("\n").filter(Boolean).map(r=>{ const [d,h,a,hg,ag,hs,as,hst,ast,p1,px,p2,po]=r.split("|");
+    return {d:Date.parse(d+"T17:00:00Z"),h,a,hg:+hg,ag:+ag,hst:n(hst),ast:n(ast),p1:n(p1),p2:n(p2),po:n(po),prev:true}; });
+  let G=0,SOT=0; rows.forEach(x=>{ if(x.hst!=null&&x.ast!=null){ G+=x.hg+x.ag; SOT+=x.hst+x.ast; } });
+  const conv=SOT?G/SOT:null, mu=rows.length?rows.reduce((t,m)=>t+m.hg+m.ag,0)/rows.length:LONG_AVG;
+  rows.forEach(m=>{ if(conv&&m.hst!=null&&m.ast!=null) m.xs=[m.hst*conv,m.ast*conv]; if(m.p1&&m.p2) m.xm=invertMarket(m.p1,m.p2,m.po,mu); });
+  PREV[lg]=rows.sort((x,y)=>x.d-y.d);
+}
 function histAvg(lg){
   const ts=(data[lg]||[]).filter(t=>t.hist); return ts.length ? ts.reduce((s,t)=>s+t.hist.gf,0)/ts.length : LONG_AVG/2;
 }
@@ -1170,7 +1181,9 @@ function domPrior(team,cut){
 function fitRatings(lg, cut=Infinity, wo=null){
   const wS=wo?wo.wS:MP.wS, wM=wo?wo.wM:MP.wM;
   const key=lg+"|"+cut+"|"+wS+"|"+wM; if(RCACHE[key]) return RCACHE[key];
-  const ms=(RESULTS[lg]||[]).filter(m=>m.d<cut).map(m=>{ const [vh,va]=gval(m,wS,wM); return {...m,hg:vh,ag:va}; });
+  const blend=m=>{ const [vh,va]=gval(m,wS,wM); return {...m,hg:vh,ag:va}; };
+  const ms=(RESULTS[lg]||[]).filter(m=>m.d<cut).map(blend);
+  const pv=MP.prevK>0 ? (PREV[lg]||[]).filter(m=>m.d<cut).map(blend) : [];
   const now = cut===Infinity ? Date.now() : cut;
   const ha=histAvg(lg);
   // lig ortalaması ve ev sahibi payı (yalnızca bu tarihe kadarki maçlardan)
@@ -1179,18 +1192,20 @@ function fitRatings(lg, cut=Infinity, wo=null){
   if(ms.length){ mu=(G+2*ha*40)/(ms.length+40); hs=(HG+HOME_PRIOR*HOME_PRIOR_GOALS)/(HG+AG+HOME_PRIOR_GOALS); }
   else { const h=HOME[lg]; mu = h&&h.n ? (h.hg+h.ag+2*ha*40)/(h.n+40) : 2*ha; hs=homeShare(lg); }
   const teams=new Set((data[lg]||[]).map(t=>t.n)); ms.forEach(m=>{teams.add(m.h);teams.add(m.a);});
+  const curTeams=[...teams]; pv.forEach(m=>{teams.add(m.h);teams.add(m.a);});   // küme düşen takımlar yalnızca hesapta
   const prior={}; const isCL = lg==="Şampiyonlar Ligi";
   teams.forEach(n=>{ const t=data[lg]?.find(x=>x.n===n);
     prior[n] = EURO_CUPS.has(lg) ? domPrior(n,cut) : t&&t.hist ? {a:1+MP.reg*(t.hist.gf/ha-1), d:1+MP.reg*(t.hist.ga/ha-1)} : (isCL ? {a:(1+MP.newA)/2,d:(1+MP.newD)/2} : {a:MP.newA,d:MP.newD}); });
   const att={}, def={}; teams.forEach(n=>{ att[n]=prior[n].a; def[n]=prior[n].d; });
   const P = MP.prior*mu/2;
   const muH=mu*hs, muA=mu*(1-hs);
-  if(ms.length){
-    const w=ms.map(m=>Math.pow(0.5,(now-m.d)/864e5/MP.half));
+  if(ms.length||pv.length){
+    const all=[...pv,...ms];
+    const w=all.map(m=>Math.pow(0.5,(now-m.d)/864e5/MP.half)*(m.prev?MP.prevK:1));
     for(let it=0; it<20; it++){
       const na={},da={},nd={},dd={};
       teams.forEach(n=>{ na[n]=P*prior[n].a; da[n]=P; nd[n]=P*prior[n].d; dd[n]=P; });
-      ms.forEach((m,i)=>{ const x=w[i];
+      all.forEach((m,i)=>{ const x=w[i];
         na[m.h]+=x*m.hg; da[m.h]+=x*muH*def[m.a];
         na[m.a]+=x*m.ag; da[m.a]+=x*muA*def[m.h];
         nd[m.h]+=x*m.ag; dd[m.h]+=x*muA*att[m.a];
@@ -1203,8 +1218,8 @@ function fitRatings(lg, cut=Infinity, wo=null){
       att[t.n]=(P*prior[t.n].a+t.gf)/(P+t.P*mu/2); def[t.n]=(P*prior[t.n].d+t.ga)/(P+t.P*mu/2); });
   }
   // ortalama 1 olacak şekilde ölçekle
-  const ns=[...teams], ma=ns.reduce((s,n)=>s+att[n],0)/ns.length||1, md=ns.reduce((s,n)=>s+def[n],0)/ns.length||1;
-  ns.forEach(n=>{ att[n]/=ma; def[n]/=md; });
+  const ns=curTeams.length?curTeams:[...teams], ma=ns.reduce((s,n)=>s+att[n],0)/ns.length||1, md=ns.reduce((s,n)=>s+def[n],0)/ns.length||1;
+  teams.forEach(n=>{ att[n]/=ma; def[n]/=md; });
   return RCACHE[key]={att,def,mu,hs,muH,muA,n:ms.length};
 }
 function scoreGrid(lh,la){
@@ -1265,8 +1280,11 @@ function h2hOf(home,away){
 function marketFor(lg,h,a,iso){
   const k=Date.parse(iso), e=(ODDS[lg]||[]).find(x=>x.h===h&&x.a===a&&Math.abs(Date.parse(x.iso)-k)<12*3600e3);
   if(!e) return null;
-  const inv=1/e.o1+1/e.ox+1/e.o2, invOU=e.ov&&e.un?1/e.ov+1/e.un:null;
-  return {p1:1/e.o1/inv, px:1/e.ox/inv, p2:1/e.o2/inv, o25: invOU?1/e.ov/invOU:null, e};
+  // Olasılık Pinnacle oranlarından (varsa; en isabetli ve en düşük kâr paylı), yoksa bahis şirketlerinin ortalamasından
+  const [a1,ax,a2] = e.q1&&e.qx&&e.q2 ? [e.q1,e.qx,e.q2] : [e.o1,e.ox,e.o2];
+  const [ao,au] = e.qov&&e.qun ? [e.qov,e.qun] : [e.ov,e.un];
+  const inv=1/a1+1/ax+1/a2, invOU=ao&&au?1/ao+1/au:null;
+  return {p1:1/a1/inv, px:1/ax/inv, p2:1/a2/inv, o25: invOU?1/ao/invOU:null, pin:!!(e.q1&&e.qx&&e.q2), e};
 }
 // Model karnesi: her maçı, yalnızca o maçtan önceki sonuçlarla tahmin edip gerçek sonuçla karşılaştırır
 const BTCACHE={};
@@ -1521,7 +1539,7 @@ function applyData(j){
   });
   if(Array.isArray(j.absences)) ABSENCES=j.absences;
   Object.entries(j.odds?.leagues||{}).forEach(([lg,txt])=>{
-    ODDS[lg]=(txt||"").split("\n").filter(Boolean).map(r=>{ const [iso,h,a,o1,ox,o2,n,ov,un]=r.split("|"); return {iso,h,a,o1:+o1,ox:+ox,o2:+o2,n:+n,ov:+ov||null,un:+un||null}; });
+    ODDS[lg]=(txt||"").split("\n").filter(Boolean).map(r=>{ const [iso,h,a,o1,ox,o2,n,ov,un,q1,qx,q2,qov,qun]=r.split("|"); return {iso,h,a,o1:+o1,ox:+ox,o2:+o2,n:+n,ov:+ov||null,un:+un||null,q1:+q1||null,qx:+qx||null,q2:+q2||null,qov:+qov||null,qun:+qun||null}; });
     // Fikstürde olmayan maçları (ör. Süper Lig) oran listesinden ekle
     const have=new Set((FIXTURES[lg]||"").split("\n").filter(Boolean).map(r=>{ const [,h,a]=r.split("|"); return h+"|"+a; }));
     const add=ODDS[lg].filter(e=>!have.has(e.h+"|"+e.a)).map(e=>`${e.iso}|${e.h}|${e.a}`);
@@ -1539,6 +1557,7 @@ function applyData(j){
       M.set(h+"|"+a,{d,h,a,hg:+hg,ag:+ag,hs:n(hs),as:n(as),hst:n(hst),ast:n(ast),p1:n(p1),px:n(px),p2:n(p2),po:n(po)}); });
     STATS[lg]=M;
   });
+  Object.entries(j.stats?.prev||{}).forEach(([lg,txt])=>buildPrev(lg,txt));
   // Otomatik tablosu olmayan ligler (Süper Lig): The Odds API skorları ve sezon istatistikleriyle gelen sonuçlar tabloya ve modele eklenir
   const extraLgs = new Set([...Object.keys(j.extraResults||{}), ...Object.keys(STATS).filter(lg=>LEAGUES[lg])]);
   extraLgs.forEach(lg=>{
@@ -1591,12 +1610,12 @@ function rankCandidates(now, exclude=new Set()){
     const k=Date.parse(e.iso), key=e.h+"|"+e.a; if(!(k>now && k<=until) || used.has(key) || exclude.has(key)) return;
     nMatches++;
     const m=matchModel(lg,e.h,e.a,e.iso,false);
-    const inv=1/e.o1+1/e.ox+1/e.o2, invOU = e.ov&&e.un ? 1/e.ov+1/e.un : null;
-    const opts=[["1X2","1",m.raw.p1,m.p1,e.o1,inv],["1X2","2",m.raw.p2,m.p2,e.o2,inv]];
-    if(invOU) opts.push(["OU","O",m.raw.o25,m.o25,e.ov,invOU],["OU","U",1-m.raw.o25,1-m.o25,e.un,invOU]);
-    opts.forEach(([mk,side,p,pc,o,iv])=>{
-      // Seçim kuralı: oran ≥ 1,80; model en az piyasa kadar iyimser; birleşik tahmin (model + piyasa) ≥ %45
-      const imp=(1/o)/iv;
+    // Piyasa olasılığı (Pinnacle varsa ondan); oynanacak oran bahis şirketlerinin ortalaması
+    const q=m.mk; if(!q) return;
+    const opts=[["1X2","1",m.raw.p1,m.p1,e.o1,q.p1],["1X2","2",m.raw.p2,m.p2,e.o2,q.p2]];
+    if(e.ov&&e.un&&q.o25!=null) opts.push(["OU","O",m.raw.o25,m.o25,e.ov,q.o25],["OU","U",1-m.raw.o25,1-m.o25,e.un,1-q.o25]);
+    opts.forEach(([mk,side,p,pc,o,imp])=>{
+      // Seçim kuralı: oran ≥ 1,80; model piyasadan 5-15 puan iyimser; birleşik tahmin (model + piyasa) ≥ %45
       // Geçmiş kupon sonuçlarından öğrenilen düzeltme (bu pazarda tahminler fazla iyimser çıktıysa güven düşer)
       const pcc = Math.min(0.95, pc*(CALIB[mk]??1));
       if(o>=CP_MIN_ODDS && p-imp>=CP_MIN_GAP && p-imp<=CP_MAX_GAP && pcc>=CP_MIN_P) cands.push({lg,iso:e.iso,h:e.h,a:e.a,mk,side,odds:o,p:+p.toFixed(4),imp:+imp.toFixed(4),pc:+pcc.toFixed(4)});
@@ -1764,7 +1783,7 @@ function learn(){
   const lgs=Object.keys(RESULTS).filter(lg=>(RESULTS[lg]||[]).length>=30);
   const score=()=>{ for(const k in RCACHE) delete RCACHE[k]; for(const k in BTCACHE) delete BTCACHE[k];
     let n=0,ll=0; lgs.forEach(lg=>{ const r=backtest(lg); if(r.n){ n+=r.n; ll+=(r.ll+r.llOU)*r.n; } }); return n?ll/n:null; };   // maç sonucu + 2,5 Üst/Alt hatası
-  const keys={rot:[0,0.03,0.06,0.09],wS:[0,0.15,0.3,0.45,0.6,0.75],wM:[0,0.15,0.3,0.45,0.6],half:[30,45,60,90],prior:[8,12,16],newA:[0.7,0.75,0.85],newD:[1.0,1.05,1.15]};
+  const keys={prevK:[0,0.25,0.5,1],rot:[0,0.03,0.06,0.09],wS:[0,0.15,0.3,0.45,0.6,0.75],wM:[0,0.15,0.3,0.45,0.6],half:[30,45,60,90],prior:[4,8,12,16],newA:[0.7,0.75,0.85],newD:[1.0,1.05,1.15]};
   const start={...MP}; const base=score(); let cur=base, mp={};
   if(base!=null){
     for(const [k,vals] of Object.entries(keys)){ let bestV=MP[k];
@@ -1838,8 +1857,15 @@ function evalWeights(){
   MP.rot=keepR;
   let nC=0; lgs.forEach(lg=>RESULTS[lg].forEach(m=>{ const iso=new Date(m.d).toISOString(); if(congestion(m.h,iso,lg).c||congestion(m.a,iso,lg).c) nC++; }));
   for(const k in RCACHE) delete RCACHE[k]; for(const k in BTCACHE) delete BTCACHE[k];
+  const keepP={prevK:MP.prevK,half:MP.half,prior:MP.prior}, prev=[];
+  for(const prevK of [0,0.5,1]) for(const half of [45,90,150]) for(const prior of [4,12]){
+    Object.assign(MP,{prevK,half,prior}); for(const k in RCACHE) delete RCACHE[k]; for(const k in BTCACHE) delete BTCACHE[k];
+    let n=0,ll=0,ou=0,hit=0; lgs.forEach(lg=>{ const r=backtest(lg); if(r.n){ n+=r.n; ll+=r.ll*r.n; ou+=r.llOU*r.n; hit+=r.hit; } });
+    prev.push({prevK,half,prior,n,ll:+(ll/n).toFixed(4),ou:+(ou/n).toFixed(4),hit:+(hit/n).toFixed(3)}); }
+  Object.assign(MP,keepP); for(const k in RCACHE) delete RCACHE[k]; for(const k in BTCACHE) delete BTCACHE[k];
+  const prevCov=Object.entries(PREV).map(([lg,v])=>`${lg} ${v.length}`).join(", ");
   const cups=[...EURO_CUPS,"Şampiyonlar Ligi"].map(lg=>{ const r=backtest(lg); return `${lg}: ${(RESULTS[lg]||[]).length} sonuç, sınanan ${r.n}${r.n?`, isabet ${Math.round(r.hit/r.n*100)}%, hata ${r.ll.toFixed(3)}`:""}`; });
-  return {cov,out,rot,nC,cups};
+  return {cov,out,rot,nC,cups,prev,prevCov};
 }
 window.GM = { ready:false, buildCoupon, learn, snapshot, MP, backtest, evalWeights, reset:()=>{ for(const k in RCACHE) delete RCACHE[k]; for(const k in BTCACHE) delete BTCACHE[k]; } };
 

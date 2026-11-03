@@ -371,19 +371,24 @@ async function fetchOdds(known, allKnown, status) {
       const unk = [...names.values()].filter(n => !kn.includes(n));
       if (unk.length) status.unmatched.push(...unk.map(n => `${lg} (oran): ${n}`));
       out[lg] = j.map(e => {
-        const o = { h: [], x: [], a: [], ov: [], un: [] };
+        const o = { h: [], x: [], a: [], ov: [], un: [] }, pin = {};
         for (const b of e.bookmakers || []) for (const m of b.markets || []) {
+          const isPin = b.key === "pinnacle";
           if (m.key === "h2h") for (const x of m.outcomes || []) {
-            if (x.name === e.home_team) o.h.push(x.price); else if (x.name === e.away_team) o.a.push(x.price); else o.x.push(x.price);
+            const k = x.name === e.home_team ? "h" : x.name === e.away_team ? "a" : "x";
+            o[k].push(x.price); if (isPin) pin[k] = x.price;
           }
           if (m.key === "totals") for (const x of m.outcomes || []) {
             if (x.point !== 2.5) continue;
-            if (/^over$/i.test(x.name)) o.ov.push(x.price); else if (/^under$/i.test(x.name)) o.un.push(x.price);
+            const k = /^over$/i.test(x.name) ? "ov" : /^under$/i.test(x.name) ? "un" : null; if (!k) continue;
+            o[k].push(x.price); if (isPin) pin[k] = x.price;
           }
         }
         if (!o.h.length || !o.a.length || !o.x.length) return null;
         const ou = o.ov.length && o.un.length ? `|${median(o.ov).toFixed(2)}|${median(o.un).toFixed(2)}` : "||";
-        return `${e.commence_time}|${names.get(e.home_team)}|${names.get(e.away_team)}|${median(o.h).toFixed(2)}|${median(o.x).toFixed(2)}|${median(o.a).toFixed(2)}|${o.h.length}${ou}`;
+        // Pinnacle (en isabetli kabul edilen bahis şirketi) oranları olasılık hesabı için ayrıca: |p1|px|p2|pÜst|pAlt
+        const pn = ["h", "x", "a", "ov", "un"].map(k => pin[k] ? pin[k].toFixed(2) : "").join("|");
+        return `${e.commence_time}|${names.get(e.home_team)}|${names.get(e.away_team)}|${median(o.h).toFixed(2)}|${median(o.x).toFixed(2)}|${median(o.a).toFixed(2)}|${o.h.length}${ou}|${pn}`;
       }).filter(Boolean).join("\n");
       console.log(`✓ Oranlar ${lg}: ${out[lg] ? out[lg].split("\n").length : 0} maç`);
     } catch (e) { console.warn(`✗ Oranlar ${lg}: ${e.message}`); }
@@ -464,19 +469,21 @@ async function buildH2H(leagues, odds, known, status) {
 async function buildStats(known, status) {
   const now = new Date(), y = now.getUTCFullYear(), s0 = now.getUTCMonth() >= 6 ? y : y - 1;
   const code = String(s0 % 100).padStart(2, "0") + String((s0 + 1) % 100).padStart(2, "0");
-  const out = {}, info = [];
-  for (const [lg, div] of Object.entries(FDCO)) {
+  const pcode = String((s0 - 1) % 100).padStart(2, "0") + String(s0 % 100).padStart(2, "0");
+  const out = {}, prev = {}, info = [];
+  for (const [lg, div] of Object.entries(FDCO)) for (const cur of [true, false]) {
     try {
-      const txt = await fdcoSeason(div, code, true);
-      if (!txt) { info.push(`${lg} yok`); continue; }
+      // bu sezon 12 saatte bir yenilenir; geçen sezon önbellekten
+      const txt = await fdcoSeason(div, cur ? code : pcode, cur);
+      if (!txt) { info.push(`${lg}${cur ? "" : " (geçen sezon)"} yok`); continue; }
       const lines = txt.replace(/^﻿/, "").split(/\r?\n/).filter(Boolean);
       const head = lines[0].split(","), ix = k => head.indexOf(k);
       const col = (c, ...ks) => { for (const k of ks) { const i = ix(k); if (i >= 0 && c[i] !== "" && c[i] != null && +c[i] > 0) return +c[i]; } return null; };
       const iD = ix("Date"), iH = ix("HomeTeam"), iA = ix("AwayTeam"), iHG = ix("FTHG"), iAG = ix("FTAG");
       const rows = lines.slice(1).map(l => l.split(",")).filter(c => c[iH] && c[iHG] !== "" && c[iHG] != null).map(c => {
         const [d, m, yy] = c[iD].split("/");
-        const o1 = col(c, "AvgCH", "PSCH", "B365CH", "AvgH", "PSH", "B365H"), ox = col(c, "AvgCD", "PSCD", "B365CD", "AvgD", "PSD", "B365D"), o2 = col(c, "AvgCA", "PSCA", "B365CA", "AvgA", "PSA", "B365A");
-        const ov = col(c, "AvgC>2.5", "PC>2.5", "B365C>2.5", "Avg>2.5", "P>2.5", "B365>2.5"), un = col(c, "AvgC<2.5", "PC<2.5", "B365C<2.5", "Avg<2.5", "P<2.5", "B365<2.5");
+        const o1 = col(c, "PSCH", "AvgCH", "B365CH", "PSH", "AvgH", "B365H"), ox = col(c, "PSCD", "AvgCD", "B365CD", "PSD", "AvgD", "B365D"), o2 = col(c, "PSCA", "AvgCA", "B365CA", "PSA", "AvgA", "B365A");
+        const ov = col(c, "PC>2.5", "AvgC>2.5", "B365C>2.5", "P>2.5", "Avg>2.5", "B365>2.5"), un = col(c, "PC<2.5", "AvgC<2.5", "B365C<2.5", "P<2.5", "Avg<2.5", "B365<2.5");
         const inv = o1 && ox && o2 ? 1 / o1 + 1 / ox + 1 / o2 : null, invOU = ov && un ? 1 / ov + 1 / un : null;
         const r3 = v => v == null ? "" : (+v.toFixed(3));
         const num = k => { const i = ix(k); return i >= 0 && c[i] !== "" ? +c[i] : ""; };
@@ -486,14 +493,15 @@ async function buildStats(known, status) {
       const teams = new Map(); rows.forEach(r => { teams.set(r.h, { id: r.h, name: r.h }); teams.set(r.a, { id: r.a, name: r.a }); });
       const names = buildNameMap([...teams.values()], known[lg] || []);
       const bad = [...teams.keys()].filter(n => !(known[lg] || []).includes(names.get(n)));
-      if (bad.length) status.unmatched.push(...bad.map(n => `${lg} (istatistik): ${n}`));
-      out[lg] = rows.map(r => [r.d, names.get(r.h), names.get(r.a), ...r.rest].join("|")).join("\n");
-      info.push(`${lg} ${rows.length} maç, şut ${rows.filter(r => r.rest[4] !== "").length}, oran ${rows.filter(r => r.rest[6] !== "").length}`);
+      if (cur && bad.length) status.unmatched.push(...bad.map(n => `${lg} (istatistik): ${n}`));
+      (cur ? out : prev)[lg] = rows.map(r => [r.d, names.get(r.h), names.get(r.a), ...r.rest].join("|")).join("\n");
+      if (cur) info.push(`${lg} ${rows.length} maç, şut ${rows.filter(r => r.rest[4] !== "").length}, oran ${rows.filter(r => r.rest[6] !== "").length}`);
+      else info.push(`geçen sezon ${rows.length}`);
     } catch (e) { info.push(`${lg} hata: ${e.message.slice(0, 60)}`); }
     if (!process.env.FD_MOCK_DIR) await sleep(250);
   }
   console.log(`✓ Maç istatistikleri: ${info.join(", ")}`);
-  return { built: now.toISOString(), season: code, info, leagues: out };
+  return { built: now.toISOString(), season: code, info, leagues: out, prev };
 }
 
 // ---------- Avrupa Ligi ve Konferans Ligi (ESPN'in herkese açık skor servisi) ----------
@@ -755,6 +763,7 @@ async function main() {
     console.log(`::notice title=Ev ve deplasman golleri::${homeTxt}`);
     console.log(`::notice title=Eksik oyuncular::${absTxt}`);
     if (h2h) console.log(`::notice title=Aralarındaki maçlar::${Object.keys(h2h.pairs).length} eşleşme, ${Object.values(h2h.pairs).filter(Boolean).length} tanesinde geçmiş maç var${status.h2hMissing ? ` · alınamayan sezonlar: ${status.h2hMissing.join(", ")}` : ""}`);
+    if (odds) console.log(`::notice title=Pinnacle oranı olan maçlar::${Object.entries(odds.leagues).map(([k, v]) => `${k} ${(v || "").split("\n").filter(r => r.split("|")[9]).length}/${(v || "").split("\n").filter(Boolean).length}`).join(", ")}`);
     if (odds) console.log(`::notice title=Oranlar::${istDate(new Date(odds.fetched))} · ${Object.entries(odds.leagues).map(([k, v]) => `${k} ${v ? v.split("\n").length : 0}`).join(", ")} · kalan kredi ${status.oddsRemaining ?? "?"}${needCoupon ? " · yeni kupon hazırlanacak" : ""}`);
     if (status.cups) console.log(`::notice title=Avrupa kupaları::${Object.entries(status.cups).map(([k, v]) => `${k}: ${v}`).join(" · ")}`);
     if (stats) console.log(`::notice title=Maç istatistikleri (${stats.season})::${stats.info.join(" · ")}`);
