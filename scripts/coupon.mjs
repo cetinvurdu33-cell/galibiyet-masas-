@@ -51,7 +51,11 @@ try {
     if (!data.needCoupon) { await browser.close(); server.close(); process.exit(0); }
   }
   // Önce dünkü sonuçlardan öğren, sonra bugünün tahminlerini kaydet ve kuponu kur
-  const r = await page.evaluate(() => { const L = window.GM.learn(); const snap = window.GM.snapshot(Date.now()); const c = window.GM.buildCoupon(Date.now()); return { L, snap, c }; });
+  // Kupon 3 günlük: süresi bitmemiş (12 saatten fazla kalmış) dolu bir kupon varsa yenisi kurulmaz; öğrenme ve tahmin kaydı yine her gün
+  const cur = (data.couponHistory || [])[0];
+  const keep = cur && cur.until && cur.items?.length && Date.parse(cur.until) - Date.now() > 12 * 3600e3 && process.env.FORCE_ODDS !== "true";
+  const r = await page.evaluate((keep) => { const L = window.GM.learn(); const snap = window.GM.snapshot(Date.now()); const c = keep ? null : window.GM.buildCoupon(Date.now()); return { L, snap, c }; }, keep);
+  if (keep) console.log(`Geçerli kupon (${cur.date}, ${cur.until.slice(0, 16)} bitiyor) sürüyor; yeni kupon kurulmadı.`);
   coupon = r.c;
   data.learn = r.L;
   const have = new Set((data.predLog || []).map(e => e.k));

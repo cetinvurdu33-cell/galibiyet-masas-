@@ -360,7 +360,7 @@ const median = a => { const b = [...a].sort((x, y) => x - y); const m = b.length
 /** Önümüzdeki 48 saatteki maçların ortalama (medyan) oranları: "ISO|Ev|Dep|1|X|2|bahisçi sayısı|2,5 Üst|2,5 Alt" */
 async function fetchOdds(known, allKnown, status) {
   const out = {};
-  const to = new Date(Date.now() + 48 * 3600e3).toISOString().replace(/\.\d{3}Z$/, "Z");
+  const to = new Date(Date.now() + 74 * 3600e3).toISOString().replace(/\.\d{3}Z$/, "Z");
   for (const [lg, key] of Object.entries(ODDS_SPORTS)) {
     try {
       const j = await oddsApi(`sports/${key}/odds?regions=eu&markets=h2h,totals&oddsFormat=decimal&dateFormat=iso&commenceTimeTo=${to}`);

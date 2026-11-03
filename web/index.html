@@ -723,9 +723,9 @@ const I18N = {
     h2hTitle:"Son 10 yılda aralarındaki maçlar ({n})", h2hShort:"Son 10 yılda {n} maç:", h2hAvg:"Maç başı gol", h2hNone:"Son 10 yılda aralarında lig maçı yok.", likelyScore:"En olası skor", over15:"1,5 üst", over25:"2,5 üst", over35:"3,5 üst", btts:"KG var", dcLbl:"Çifte şans",
     fW:"G", fD:"B", fL:"M", deepTitle:"Derin analiz", cTitle:"Takım karşılaştırması (bu sezon, maç başına)", cShots:"Şut (atılan / yenen)", cSot:"İsabetli şut (atılan / yenen)", cXg:"Pozisyona göre gol beklentisi", cGoals:"Gerçek gol (atılan / yenen)", cLuck:"Şans payı", cMkt:"Piyasa gücü (gol farkı)", cRest:"Son maçtan beri", cNext:"Sonraki maça", cCong:"Yoğun fikstür, rotasyon riski: {t} ({w}).", cWhyRest:"{n} gün önce oynadı", cWhyNext:"{n} gün sonra {l} maçı var", cCongM:"Model bu takımın gol beklentisini %{p} düşürdü.", cDays:"{n} gün", cBetter:"Karşılaştırmada önde: {t} ({k}/{n} ölçü)", cEven:"Karşılaştırmada denge var", cNote:"Kendi liglerindeki maçlardan (en çok {n} maç). Yeşil, o ölçüde daha iyi olan taraftır. Şans payı artıdaysa takım, pozisyonlarının gösterdiğinden fazla gol farkı yakalamış demektir; bu genelde sürmez. Piyasa gücü, oynadığı maçların kapanış oranlarına göre ortalama bir rakibe karşı beklenen gol farkıdır.", dAtt:"Hücum gücü", dDef:"Savunma (düşük iyi)", dXg:"Beklenen gol", dForm:"Son 5 maç", dHome:"İç saha G-B-M", dAway:"Deplasman G-B-M",
     deepNote:"Hücum ve savunma gücü lig ortalamasına göredir: ×1,20 hücum, ortalama bir takımdan %20 fazla gol demektir. Savunmada ×0,80, ortalamadan %20 az gol yemek demektir.",
-    cpEyebrow:"Her sabah 09:00 civarı", cpTitle:"Günün kuponu",
+    cpEyebrow:"3 günde bir, sabah 09:00 civarı", cpTitle:"3 günlük kupon",
     cpNone:"Oran verisi bağlandığında burada her sabah, önümüzdeki 36 saatin maçlarından en fazla 6 seçimlik bir kupon çıkacak.",
-    cpOld:"Bugünün kuponu henüz hazırlanmadı; aşağıdaki {d} tarihli kupon.",
+    cpOld:"Yeni kupon henüz hazırlanmadı; aşağıdaki {d} kuponu.",
     cpEmpty:"Önümüzdeki 36 saatteki {m} maçın hiçbiri kriterlere uymadı. Zayıf maçlarla doldurmadık.",
     cpFew:"Önümüzdeki 36 saatteki {m} maçtan yalnızca {n} tanesi kriterlere uydu. Kuponu zayıf maçlarla 6'ya tamamlamadık.",
     cpNums:"Model {p} · bahis piyasası {q} · birleşik tahmin {c}", cpTotal:"Toplam oran", cpAll:"Hepsinin tutma ihtimali",
@@ -796,9 +796,9 @@ const I18N = {
     h2hTitle:"Meetings in the last 10 years ({n})", h2hShort:"Last 10 years, {n} meetings:", h2hAvg:"Goals per match", h2hNone:"No league meetings between them in the last 10 years.", likelyScore:"Most likely score", over15:"Over 1.5", over25:"Over 2.5", over35:"Over 3.5", btts:"Both score", dcLbl:"Double chance",
     fW:"W", fD:"D", fL:"L", deepTitle:"Deep analysis", cTitle:"Team comparison (this season, per match)", cShots:"Shots (for / against)", cSot:"Shots on target (for / against)", cXg:"Expected goals from chances", cGoals:"Actual goals (for / against)", cLuck:"Luck factor", cMkt:"Market strength (goal diff.)", cRest:"Days since last match", cNext:"Days to next match", cCong:"Congested schedule, rotation risk: {t} ({w}).", cWhyRest:"played {n} days ago", cWhyNext:"{l} match in {n} days", cCongM:"The model lowered this team's expected goals by {p}%.", cDays:"{n} days", cBetter:"Ahead in the comparison: {t} ({k}/{n} measures)", cEven:"The comparison is balanced", cNote:"From matches in their own league (up to {n} matches). Green marks the side that is better on that measure. A positive luck factor means the team has a better goal difference than its chances suggest, which usually does not last. Market strength is the expected goal difference against an average opponent, based on the closing odds of its matches.", dAtt:"Attack rating", dDef:"Defence (lower is better)", dXg:"Expected goals", dForm:"Last 5", dHome:"Home W-D-L", dAway:"Away W-D-L",
     deepNote:"Attack and defence ratings are relative to the league average: ×1.20 attack means 20% more goals than an average team. ×0.80 defence means conceding 20% fewer goals than average.",
-    cpEyebrow:"Every morning around 09:00", cpTitle:"Coupon of the day",
+    cpEyebrow:"Every 3 days, around 09:00", cpTitle:"3-day coupon",
     cpNone:"Once odds data is connected, a coupon of up to 6 picks from the next 36 hours' matches will appear here every morning.",
-    cpOld:"Today's coupon hasn't been built yet; this is the coupon from {d}.",
+    cpOld:"The new coupon hasn't been built yet; this is the {d} coupon.",
     cpEmpty:"None of the {m} matches in the next 36 hours met the criteria. We didn't fill the coupon with weaker picks.",
     cpFew:"Only {n} of the {m} matches in the next 36 hours met the criteria. We didn't pad the coupon to 6 with weaker picks.",
     cpNums:"Model {p} · betting market {q} · combined {c}", cpTotal:"Total odds", cpAll:"Chance all win",
@@ -1572,7 +1572,7 @@ function applyData(j){
 // ---- Günün kuponu ----
 // Oranlar ve kupon geçmişi data.json'dan gelir. Kupon her sabah GitHub'daki işte bu fonksiyonla hazırlanıp sabitlenir.
 // Orta (%45-55) ve yüksek (%55+) güvenli seçimler; 1-2 ve 2,5 Üst/Alt
-const CP_MIN_ODDS = 1.80, CP_MIN_P = 0.45, CP_HI_P = 0.55, CP_SIZE = 6, CP_WINDOW_H = 36;
+const CP_MIN_ODDS = 1.80, CP_MIN_P = 0.45, CP_HI_P = 0.55, CP_SIZE = 6, CP_WINDOW_H = 72;   // kupon 3 günlük: önümüzdeki 72 saatin maçları
 // Uyum filtresi: model piyasadan bu kadar fazla iyimserse seçim alınmaz (büyük ayrışma çoğu zaman modelin bilmediği bir haberdir)
 const CP_MAX_GAP = 0.15;
 // En az avantaj: model piyasadan en az bu kadar iyimser olmalı. Fark küçükse seçim, bahis şirketinin kâr payı yüzünden
@@ -1617,7 +1617,7 @@ function buildCoupon(nowMs){
   const alts = [];
   for(let k=CP_SIZE; k<ranked.length && alts.length<CP_MAX_ALTS; k+=CP_SIZE) alts.push(byTime(ranked.slice(k,k+CP_SIZE)));
   const prod = f => items.reduce((s,i)=>s*f(i),1);
-  return { date: istDay.format(new Date(now)), built: new Date(now).toISOString(), items, alts,
+  return { date: istDay.format(new Date(now)), built: new Date(now).toISOString(), until: new Date(now+CP_WINDOW_H*3600e3).toISOString(), items, alts,
     totalOdds: items.length ? +prod(i=>i.odds).toFixed(2) : null, pAll: items.length ? +prod(i=>i.pc).toFixed(4) : null,
     nMatches, nCands, status: items.length ? "pending" : "empty" };
 }
@@ -1629,6 +1629,16 @@ function altsOf(c){
   const out=[]; for(let k=0; k<ranked.length && out.length<CP_MAX_ALTS; k+=CP_SIZE) out.push(byTime(ranked.slice(k,k+CP_SIZE)));
   return out;
 }
+// Kuponun kapsadığı günler: 3 günlük kuponda "3 – 5 Kasım 2026"
+function cpLabel(c){
+  if(!c.until) return dday(c.date);
+  const end=istDay.format(new Date(Date.parse(c.until)-12*3600e3));
+  if(end===c.date) return dday(c.date);
+  const f=o=>new Intl.DateTimeFormat(loc(),{...o,timeZone:"UTC"});
+  const a=new Date(c.date+"T12:00:00Z"), b=new Date(end+"T12:00:00Z");
+  return a.getUTCMonth()===b.getUTCMonth() ? `${a.getUTCDate()} – ${dday(end)}` : `${f({day:"numeric",month:"long"}).format(a)} – ${dday(end)}`;
+}
+const cpActive = c => c && (c.until ? Date.parse(c.until) > Date.now() : c.date===istDay.format(new Date()));
 let CP_VIEW = 0;   // 0 = ana kupon, 1.. = alternatifler
 function selTxt(i){
   if(i.mk==="OU") return `${t_(i.side==="O"?"cpOver":"cpUnder")} <span class="muted">(${t_(i.side==="O"?"over25":"under25")})</span>`;
@@ -1679,10 +1689,10 @@ function myHTML(){
 }
 function renderCoupon(){
   const box=$("couponSec"); const c=COUPONS[0];
-  const head = `<div class="head"><div><div class="eyebrow">${t_("cpEyebrow")}</div><h2>${t_("cpTitle")}</h2></div>${c?`<span class="muted">${esc(dday(c.date))}</span>`:""}</div>`;
+  const head = `<div class="head"><div><div class="eyebrow">${t_("cpEyebrow")}</div><h2>${t_("cpTitle")}</h2></div>${c?`<span class="muted">${esc(cpLabel(c))}</span>`:""}</div>`;
   if(!c){ box.innerHTML = head+`<p class="cp-warn">${t_("cpNone")}</p>`; return; }
   const today = istDay.format(new Date());
-  const old = c.date!==today ? `<p class="cp-warn">${t_("cpOld",{d:dday(c.date)})}</p>` : "";
+  const old = !cpActive(c) ? `<p class="cp-warn">${t_("cpOld",{d:cpLabel(c)})}</p>` : "";
   const tm = iso => new Intl.DateTimeFormat(loc(),{timeZone:"Europe/Istanbul",weekday:"short",hour:"2-digit",minute:"2-digit"}).format(new Date(iso));
   const st = i => i.res ? `<span class="st ${i.res}">${t_("cpRes"+i.res)}${i.score?" "+i.score:""}</span>` : `<span class="st P">${t_("cpResP")}</span>`;
   const alts = altsOf(c), views = [c.items, ...alts];
@@ -1709,7 +1719,7 @@ function renderCoupon(){
   const picks=COUPONS.flatMap(x=>x.items).filter(i=>i.res==="W"||i.res==="L");
   const hist = COUPONS.length>1||done.length ? `<details class="cp-hist"><summary>${t_("cpHist")}</summary>
       <p style="margin:6px 0 0">${t_("cpHistSum",{c:done.length,w:done.filter(x=>x.status==="won").length,n:picks.length,h:picks.filter(i=>i.res==="W").length,p:picks.length?pct(picks.filter(i=>i.res==="W").length/picks.length):"–"})}</p>
-      <div class="cp-days">${COUPONS.slice(0,30).map(x=>`<details class="cp-day"><summary><b>${esc(dday(x.date))}</b> · ${x.items.filter(i=>i.res==="W").length}/${x.items.length} · ${t_("cpSt_"+x.status)}${(x.alts||[]).length?" · "+t_("cpAltsHist",{t:(x.alts||[]).map(a=>`${a.filter(i=>i.res==="W").length}/${a.length}`).join(", ")}):""}</summary>${dayHTML(x,st)}</details>`).join("")}</div></details>` : "";
+      <div class="cp-days">${COUPONS.slice(0,30).map(x=>`<details class="cp-day"><summary><b>${esc(cpLabel(x))}</b> · ${x.items.filter(i=>i.res==="W").length}/${x.items.length} · ${t_("cpSt_"+x.status)}${(x.alts||[]).length?" · "+t_("cpAltsHist",{t:(x.alts||[]).map(a=>`${a.filter(i=>i.res==="W").length}/${a.length}`).join(", ")}):""}</summary>${dayHTML(x,st)}</details>`).join("")}</div></details>` : "";
   box.innerHTML = head+old+empty+nav+`<div class="cp-list">${rows}</div>`+few+sum+`<p class="cp-warn">${t_("cpWarn",{o:dec(CP_MIN_ODDS,2),p:pct(CP_MIN_P),g:Math.round(CP_MAX_GAP*100),m:Math.round(CP_MIN_GAP*100)})}</p>`+myHTML()+hist+learnHTML();
 }
 // ---- Öğrenme ----

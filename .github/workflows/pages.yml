@@ -75,6 +75,7 @@ jobs:
         timeout-minutes: 10
         env:
           EVAL_MODEL: ${{ inputs.eval_model }}
+          FORCE_ODDS: ${{ inputs.force_odds }}
         run: |
           if [ -f web/data.json ] && { grep -q '"needCoupon":true' web/data.json || [ "$EVAL_MODEL" = "true" ]; }; then
             mkdir -p /tmp/pw && cd /tmp/pw && npm init -y >/dev/null && npm i playwright@1.48.2 >/dev/null
