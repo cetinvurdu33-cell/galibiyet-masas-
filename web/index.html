@@ -1106,7 +1106,7 @@ const CALIB = {};                 // kupon pazarına göre güven düzeltmesi ("
 // Model ayarları (bu sezonun maçlarıyla yapılan geriye dönük testte seçildi; bkz. "Model karnesi")
 const MP = {
   half: 45,      // bu kadar gün önceki maç yarım ağırlık taşır
-  prior: 12,     // geçmiş sezonların "kaç maçlık" etkisi
+  prior: 4,      // geçmiş sezonların "kaç maçlık" etkisi
   reg: 1,        // geçmiş sezon gücünün ne kadarı korunur (1 = tamamı; geri kalanı lig ortalamasına çekilir)
   rho: -0.08,    // düşük skorlu maçlar için Dixon-Coles düzeltmesi
   newA: 0.75, newD: 1.05,   // lige yeni gelen takımların başlangıç hücum/savunma değeri
@@ -1116,7 +1116,7 @@ const MP = {
   shrink: 0,     // sonuç olasılıklarını lig ortalamasına çekme payı (aşırı özgüveni azaltır)
   // Takım gücü yalnızca golden değil: maçtaki isabetli şutlardan çıkan gol beklentisi (wS) ve
   // maçın kapanış oranlarından çıkan gol beklentisi (wM) de katılır; kalan pay gerçek goldür.
-  prevK: 0,     // geçen sezonun maçlarının ağırlık çarpanı (0 = kullanılmaz); zamanla azalan ağırlığın üstüne
+  prevK: 0.5,   // geçen sezonun maçlarının ağırlık çarpanı (0 = kullanılmaz); zamanla azalan ağırlığın üstüne
   rot: 0,       // yoğun fikstür etkisi (her yorgunluk/rotasyon puanı için gol beklentisinde değişim payı)
   wS: 0.45, wM: 0.3,   // 381 maçlık geriye dönük testte en iyi birleşim (22 Ekim 2026)
 };
