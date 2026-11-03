@@ -760,6 +760,11 @@ async function main() {
     if (stats) console.log(`::notice title=Maç istatistikleri (${stats.season})::${stats.info.join(" · ")}`);
     if (errors.length) console.log(`::warning title=Alınamayan veriler::${errors.join(" | ").slice(0, 900)}`);
     // Elle başlatılan çalışmada istenirse maç sonuçlarını da yaz (model kontrolü için)
+    // Kupon geçmişi, seçim seçim (analiz için): tarih,kupon(0=ana),lig,pazar,taraf,oran,model,piyasa,birleşik,sonuç
+    if (process.env.DUMP_RESULTS === "true") {
+      const rows = couponHistory.flatMap(c => [c.items, ...(c.alts || [])].flatMap((l, k) => l.map(i => [c.date, k, i.lg, i.mk || "1X2", i.side, i.odds, i.p, i.imp, i.pc, i.res || "P"].join(","))));
+      for (let i = 0; i < rows.length; i += 60) console.log(`::notice title=Kupon geçmişi ${i / 60 + 1}::${rows.slice(i, i + 60).join(" ; ")}`);
+    }
     if (process.env.DUMP_RESULTS === "true") for (const [k, v] of Object.entries(leagues))
       if (v.results) console.log(`::notice title=Sonuçlar ${k}::${v.results.replace(/\n/g, " ; ")}`);
     if (status.unmatched.length) console.log(`::warning title=Eşleşmeyen takım adları::${status.unmatched.join(", ")}`);
