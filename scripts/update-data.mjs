@@ -69,6 +69,7 @@ const ALIASES = {
   "BB Erzurumspor": "Erzurumspor",
   "Erzurum BB": "Erzurumspor",
   "Erzurumspor FK": "Erzurumspor",
+  "Erzurum": "Erzurumspor",
   "Istanbul Basaksehir": "Başakşehir",
   "Corum FK": "Çorum FK",
   "Corum Belediyespor": "Çorum FK",
