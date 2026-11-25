@@ -277,7 +277,7 @@ mark{background:var(--accent-soft);color:inherit;border-radius:2px}
     <details class="how">
       <summary data-i18n="howTitle">Tahmin nasıl hesaplanıyor?</summary>
       <div data-i18n-html="howBody">
-      <p><b>Takım güçleri.</b> Her takımın hücum ve savunma gücü bu sezonki maçlarından tek tek hesaplanır. Bir gol, güçlü bir savunmaya karşı atıldıysa daha değerli sayılır; yakın tarihli maçlar eskilerden daha ağırdır (120 gün önceki bir maç yarım ağırlık taşır). Başlangıç değeri son 3 sezonun sezon sonu tablolarıdır (2023-24 ×1, 2024-25 ×2, 2025-26 ×3) ve yaklaşık 8 maçlık ağırlık taşır; sezon ilerledikçe güncel form öne geçer. Lige yeni çıkan takımlar ortalamanın biraz altında başlar.</p>
+      <p><b>Takım güçleri.</b> Her takımın hücum ve savunma gücü bu sezonki maçlarından tek tek hesaplanır. Bir gol, güçlü bir savunmaya karşı atıldıysa daha değerli sayılır; yakın tarihli maçlar eskilerden daha ağırdır (150 gün önceki bir maç yarım ağırlık taşır). Golün yanında isabetli şutlardan ve kapanış oranlarından çıkan gol beklentisi de katılır; böylece şanslı ya da şanssız skorlar gücü daha az savurur. Başlangıç değeri son 3 sezonun sezon sonu tablolarıdır (2023-24 ×1, 2024-25 ×2, 2025-26 ×3) ve yaklaşık 4 maçlık ağırlık taşır; sezon ilerledikçe güncel form öne geçer. Lige yeni çıkan takımlar ortalamanın biraz altında başlar. Geçmiş maçlarla yapılan testte model favorilere fazla çekingen çıktığı için (%74 dediği sonuçlar %80 tutuyordu) güçlü ve zayıf takım arasındaki gol beklentisi farkı biraz açılır.</p>
       <p><b>Ev sahibi avantajı.</b> Her ligde bu sezon ev sahiplerinin attığı gollerin toplam gollere oranı ölçülür. Bu oran, Avrupa liglerinde uzun yıllardır görülen yaklaşık %55'lik payla harmanlanır; böylece az maç oynanmışken tek tük sonuçlar oranı savurmaz. Oran %55 ise ev sahibinin beklenen golü %10 artar, deplasman takımınınki %10 azalır.</p>
       <p><b>Sakat ve cezalı oyuncular.</b> Maç günü forma giyemeyecek oyuncular takımın hücum gücünü, oyuncunun bu sezonki gol ve asist katkısıyla orantılı olarak düşürür. Takımın gollerinin üçte birini atan bir oyuncu eksikse hücum yaklaşık %20 azalır, çünkü yerine oynayan da bir miktar katkı verir. Her eksik oyuncu ayrıca savunmayı biraz zayıflatır; kaleci ve defans oyuncularında bu etki daha büyüktür. Şüpheli oyuncular yarım sayılır. Hücum kaybı en fazla %25, savunma kaybı en fazla %10 olabilir.</p>
       <p><b>Sonuç ve skor olasılıkları.</b> İki takımın beklenen gollerinden her skorun olasılığı Poisson dağılımıyla hesaplanır; 0-0, 1-0, 0-1 ve 1-1 gibi düşük skorlar için Dixon-Coles düzeltmesi uygulanır. 1-X-2, en olası skorlar, 2,5 üst ve karşılıklı gol olasılıkları bu tablodan çıkar. En yüksek sonuç olasılığı %55 ve üzerindeyse güven "yüksek", %45-55 arasındaysa "orta", altındaysa "düşük" sayılır. Kesinleşmiş ilk 11'ler maçtan kısa süre önce açıklandığı için modele dahil değildir.</p>
@@ -768,7 +768,7 @@ const I18N = {
     lg1:"1: home win", lgX:"X: draw", lg2:"2: away win", lgH1:"More goals in the 1st half", lgEq:"Equal", lgH2:"More goals in the 2nd half",
     searchLabel:"Search matches", searchPh:"Search a team, e.g. Fenerbahçe, Real Madrid",
     howTitle:"How is the prediction calculated?",
-    howBody:`<p><b>Team ratings.</b> Each team's attack and defence ratings are calculated match by match from this season. A goal counts for more when scored against a strong defence, and recent matches weigh more than older ones (a match 120 days ago carries half the weight). The starting point is the final tables of the last 3 seasons (2023-24 ×1, 2024-25 ×2, 2025-26 ×3), worth about 8 matches, so current form takes over as the season goes on. Newly promoted teams start slightly below average.</p>
+    howBody:`<p><b>Team ratings.</b> Each team's attack and defence ratings are calculated match by match from this season. A goal counts for more when scored against a strong defence, and recent matches weigh more than older ones (a match 150 days ago carries half the weight). Alongside goals, the expected goals implied by shots on target and closing odds are used too, so lucky or unlucky scorelines move the ratings less. The starting point is the final tables of the last 3 seasons (2023-24 ×1, 2024-25 ×2, 2025-26 ×3), worth about 4 matches, so current form takes over as the season goes on. Newly promoted teams start slightly below average. Testing on past matches showed the model was too cautious about favourites (results it rated 74% came in 80% of the time), so the expected-goals gap between strong and weak teams is widened slightly.</p>
       <p><b>Home advantage.</b> In each league, the share of goals scored by home teams this season is measured. It is blended with the roughly 55% share seen in European leagues over many years, so a handful of early results can't swing it. At 55%, the home team's expected goals rise by 10% and the away team's fall by 10%.</p>
       <p><b>Injured and suspended players.</b> Players who will miss the match lower their team's attack in proportion to their goals and assists this season. If a player who scored a third of the team's goals is out, the attack drops by about 20%, because whoever replaces him also contributes something. Each missing player also weakens the defence a little, more so for goalkeepers and defenders. Doubtful players count as half. The attack can lose at most 25% and the defence at most 10%.</p>
       <p><b>Result and score probabilities.</b> The probability of every scoreline is calculated from the two teams' expected goals with a Poisson distribution, with the Dixon-Coles correction for low scores such as 0-0, 1-0, 0-1 and 1-1. The 1-X-2, most likely scores, over 2.5 and both-teams-score probabilities all come from this table. If the highest result probability is 55% or more, confidence is "high"; 45-55% is "medium"; below that is "low". Confirmed line-ups are announced shortly before kick-off, so they are not part of the model.</p>
@@ -1105,9 +1105,9 @@ let LEARN = null;                 // her sabah sonuçlardan öğrenilen ayarlar
 const CALIB = {};                 // kupon pazarına göre güven düzeltmesi ("1X2", "OU")
 // Model ayarları (bu sezonun maçlarıyla yapılan geriye dönük testte seçildi; bkz. "Model karnesi")
 const MP = {
-  half: 45,      // bu kadar gün önceki maç yarım ağırlık taşır
+  half: 150,     // bu kadar gün önceki maç yarım ağırlık taşır
   prior: 4,      // geçmiş sezonların "kaç maçlık" etkisi
-  reg: 1,        // geçmiş sezon gücünün ne kadarı korunur (1 = tamamı; geri kalanı lig ortalamasına çekilir)
+  reg: 1.2,      // geçmiş sezon gücünün ne kadarı korunur (1 = tamamı; 1'in üstü farkları biraz büyütür)
   rho: -0.08,    // düşük skorlu maçlar için Dixon-Coles düzeltmesi
   newA: 0.75, newD: 1.05,   // lige yeni gelen takımların başlangıç hücum/savunma değeri
   mkt: 0.6,      // bahis oranı olan maçlarda piyasanın tahmindeki payı (geri kalanı model)
@@ -1116,9 +1116,12 @@ const MP = {
   shrink: 0,     // sonuç olasılıklarını lig ortalamasına çekme payı (aşırı özgüveni azaltır)
   // Takım gücü yalnızca golden değil: maçtaki isabetli şutlardan çıkan gol beklentisi (wS) ve
   // maçın kapanış oranlarından çıkan gol beklentisi (wM) de katılır; kalan pay gerçek goldür.
-  prevK: 0.5,   // geçen sezonun maçlarının ağırlık çarpanı (0 = kullanılmaz); zamanla azalan ağırlığın üstüne
+  prevK: 0,     // geçen sezonun maçlarının ağırlık çarpanı (0 = kullanılmaz); zamanla azalan ağırlığın üstüne
   rot: 0,       // yoğun fikstür etkisi (her yorgunluk/rotasyon puanı için gol beklentisinde değişim payı)
-  wS: 0.45, wM: 0.3,   // 381 maçlık geriye dönük testte en iyi birleşim (22 Ekim 2026)
+  wS: 0.6, wM: 0.3,    // 2.174 maçlık geriye dönük testte en iyi birleşim (25 Kasım 2026)
+  // Güçlü ile zayıf takım arasındaki gol beklentisi farkını açar (1 = olduğu gibi). Geriye dönük testte model favorilere
+  // fazla çekingendi (%74 dediği %80, %83 dediği %88 tuttu); 1,1 bunu düzeltir.
+  gam: 1.1,
 };
 const RCACHE = {};
 // ---- Maç istatistikleri (şut, isabetli şut, kapanış oranları) ----
@@ -1241,7 +1244,10 @@ function matchModel(lg,home,away,iso,neutral,opt={}){
   const ah=r.att[home]??1, dh=r.def[home]??1, aa=r.att[away]??1, da=r.def[away]??1;
   const ih=opt.noAbs?{list:[],att:1,def:1,attLoss:0,defLoss:0}:impact(home,lg,iso), ia=opt.noAbs?{list:[],att:1,def:1,attLoss:0,defLoss:0}:impact(away,lg,iso);
   const muH = neutral ? r.mu/2 : r.muH, muA = neutral ? r.mu/2 : r.muA;
-  let lh = muH*ah*da*ih.att*ia.def, la = muA*aa*dh*ia.att*ih.def;
+  let lh = muH*ah*da, la = muA*aa*dh;
+  // toplam gol aynı kalır (lh·la sabit), yalnızca iki takım arasındaki oran açılır
+  if(MP.gam!==1){ const k=Math.pow(lh/la,(MP.gam-1)/2); lh*=k; la/=k; }
+  lh*=ih.att*ia.def; la*=ia.att*ih.def;
   // Yoğun fikstür: yorgun ya da rotasyon yapacak takım daha az atar, daha çok yer
   const ch = MP.rot>0 && !neutral ? congestion(home,iso,lg) : {c:0}, ca = MP.rot>0 && !neutral ? congestion(away,iso,lg) : {c:0};
   if(ch.c||ca.c){ lh*=(1-MP.rot*ch.c)*(1+MP.rot*ca.c); la*=(1-MP.rot*ca.c)*(1+MP.rot*ch.c); }
@@ -1783,7 +1789,7 @@ function learn(){
   const lgs=Object.keys(RESULTS).filter(lg=>(RESULTS[lg]||[]).length>=30);
   const score=()=>{ for(const k in RCACHE) delete RCACHE[k]; for(const k in BTCACHE) delete BTCACHE[k];
     let n=0,ll=0; lgs.forEach(lg=>{ const r=backtest(lg); if(r.n){ n+=r.n; ll+=(r.ll+r.llOU)*r.n; } }); return n?ll/n:null; };   // maç sonucu + 2,5 Üst/Alt hatası
-  const keys={prevK:[0,0.25,0.5,1],rot:[0,0.03,0.06,0.09],wS:[0,0.15,0.3,0.45,0.6,0.75],wM:[0,0.15,0.3,0.45,0.6],half:[30,45,60,90],prior:[4,8,12,16],newA:[0.7,0.75,0.85],newD:[1.0,1.05,1.15]};
+  const keys={prevK:[0,0.25,0.5,1],rot:[0,0.03,0.06,0.09],wS:[0,0.15,0.3,0.45,0.6,0.75],wM:[0,0.15,0.3,0.45,0.6],half:[30,45,60,90,150],prior:[4,8,12,16],newA:[0.7,0.75,0.85],newD:[1.0,1.05,1.15],reg:[0.8,1,1.2,1.4],gam:[1,1.05,1.1,1.2]};
   const start={...MP}; const base=score(); let cur=base, mp={};
   if(base!=null){
     for(const [k,vals] of Object.entries(keys)){ let bestV=MP[k];

@@ -41,6 +41,10 @@ const ALIASES = {
   "Sporting Clube de Portugal": "Sporting CP",
   "SK Slavia Praha": "Slavia Prag",
   "FC Shakhtar Donetsk": "Şahtar Donetsk",
+  // The Odds API adları
+  "Shakhtar Donetsk": "Şahtar Donetsk",
+  "Slavia Praha": "Slavia Prag",
+  "Sporting Lisbon": "Sporting CP",
   "AEK Athens FC": "AEK Atina",
   "PAE AEK": "AEK Atina",
   "PSV": "PSV",
@@ -96,8 +100,21 @@ const AF_LEAGUES = {
 const NOISE = new Set(("fc cf afc ac acf as ss ssc sc us bc cfc club calcio de del osc sco aj es kv sk fk " +
   "ud sd ca rc rcd ogc fsv tsg sv cd pfc fsc").split(" "));
 const tokens = s => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
-  .replace(/ı/g, "i").replace(/[øØ]/g, "o").replace(/ß/g, "ss").replace(/ł/g, "l")
+  .replace(/ı/g, "i").replace(/[øØ]/g, "o").replace(/ß/g, "ss").replace(/ł/g, "l").replace(/æ/g, "ae")
   .split(/[^a-z0-9]+/).filter(t => t && !NOISE.has(t) && !/^\d+$/.test(t));
+// Aynı adın farklı yazımları (yalnızca son eşleştirme adımında kullanılır)
+const SYN = { st: "saint", sint: "saint", prague: "praha", prag: "praha", kobenhavn: "copenhagen", lisboa: "lisbon" };
+const syn = t => SYN[t] || t;
+// İki kelime aynı sayılır mı: birebir, eş anlamlı, biri ötekinin başı (≥5 harf) ya da tek harf farkı (≥6 harf)
+function sameWord(a, b) {
+  a = syn(a); b = syn(b); if (a === b) return true;
+  const [s, l] = a.length <= b.length ? [a, b] : [b, a];
+  if (s.length >= 5 && l.startsWith(s)) return true;
+  if (s.length < 6 || l.length - s.length > 1) return false;
+  let i = 0, j = 0, d = 0;
+  while (i < s.length && j < l.length) { if (s[i] === l[j]) { i++; j++; continue; } if (++d > 1) return false; if (s.length === l.length) i++; j++; }
+  return d + (l.length - j) + (s.length - i) <= 1;
+}
 const key = s => tokens(s).join(" ");
 const cleanName = s => s.replace(/^(FC|AFC|AC|AS|SS|SSC|US|CF|SC|RC|RCD|CA|UD|SD|1\. ?FC|1\. ?FSV|TSG|SV|VfB|VfL|FK|SK) /, "")
   .replace(/ (FC|CF|AFC|SC|FK|SK|KV|Calcio|\d{2,4})$/g, "").replace(/ (FC|CF|\d{2,4})$/, "").trim();
@@ -142,6 +159,22 @@ function buildNameMap(apiTeams, known) {
       if (score > bestScore) { best = x; bestScore = score; }
     }
     if (best) { map.set(t.id, best.n); claimed.add(best.n); }
+  }
+  // 3) Hâlâ eşleşmeyenler: yazım farklarına dayanıklı kelime kapsama (ör. "Olympiakos Piraeus" ⊇ "Olympiacos",
+  //    "Union Saint-Gilloise" = "Union St.-Gilloise"). Önceki adımlarda eşleşen takımlar etkilenmez.
+  for (const t of apiTeams) {
+    if (map.has(t.id)) continue;
+    const a = [...new Set([...tokens(t.name), ...tokens(t.shortName || "")])];
+    let best = null, bestScore = 0, tie = false;
+    for (const x of kTok) {
+      if (claimed.has(x.n) || !x.t.size) continue;
+      const xt = [...x.t], inA = a.filter(w => xt.some(v => sameWord(w, v))).length, inX = xt.filter(v => a.some(w => sameWord(w, v))).length;
+      if (!inA || (inX !== xt.length && inA !== a.length)) continue;
+      const score = Math.min(inA, inX) / (a.length + xt.length - Math.min(inA, inX));
+      if (score > bestScore) { best = x; bestScore = score; tie = false; } else if (score === bestScore) tie = true;
+    }
+    // iki aday eşit benzerlikteyse yanlış eşleşme riskine girilmez
+    if (best && !tie) { map.set(t.id, best.n); claimed.add(best.n); }
     else map.set(t.id, cleanName(t.name));
   }
   return map;
